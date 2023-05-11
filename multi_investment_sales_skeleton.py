@@ -7,29 +7,32 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install pygraphviz
+# MAGIC %pip install pygraphviz --quiet
 
 # COMMAND ----------
 
-# MAGIC %pip install networkx
+# MAGIC %pip install networkx --quiet
 
 # COMMAND ----------
 
-# MAGIC %pip install dowhy
+# MAGIC %pip install dowhy --quiet
 
 # COMMAND ----------
 
-# MAGIC %pip install causal-learn
+# MAGIC %pip install causal-learn --quiet
 
 # COMMAND ----------
 
-# MAGIC %pip install econml
+# MAGIC %pip install econml --quiet
 
 # COMMAND ----------
 
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
+import pickle as pkl
+import os
 from scipy.special import expit, logit
 
 # COMMAND ----------
@@ -443,7 +446,6 @@ from causallearn.utils.GraphUtils import GraphUtils
 tech_support_effect_model = dowhy.CausalModel(data=raw_df,
                      graph=graph,
                      treatment="Tech Support", 
-                     effect_modifiers=["Size", "Global Flag"], 
                      outcome="Revenue"
                      )
 
@@ -455,24 +457,74 @@ print(tech_support_total_effect_identified_estimand)
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC The following code creates a wrapper function, EstimatorWrapper, that uses the const_marginal_effect method to return the point estimates of the effect given the effect modifiers. We will wrap our effect estimator we get from EconML with this function and log it in MLflow. Later when we make a batch inference, we load this model (estimator) from MLflow and use it for inference.   
 
-# estimate
-tech_support_total_effect_estimate = tech_support_effect_model.estimate_effect(
-    tech_support_total_effect_identified_estimand,
-    method_name="backdoor.econml.dml.LinearDML",
-    method_params={
-        "init_params": {
-            "model_t": model_t,
-            "model_y": model_y,
-            "linear_first_stages": True,
-            "discrete_treatment": True,
-            "cv": 3,
-            "mc_iters": 1,
-        },
-    },
-)
+# COMMAND ----------
 
-tech_support_total_effect_estimate.interpret()
+import mlflow
+class EstimatorWrapper(mlflow.pyfunc.PythonModel):
+  def __init__(self, model):
+    self.model = model
+    
+  def predict(self, context, model_input):
+    return self.model.const_marginal_effect(model_input)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC The custom fuction logs an identified estimand, various parameters and models to MLflow.
+
+# COMMAND ----------
+
+def log_results(effect, estimand, effect_modifiers, method_name, init_params, wrappedEstimator):
+  mlflow.set_tags({"effect": effect})
+
+  with open("estimand.pkl", 'wb') as output:
+    pkl.dump(estimand, output, pkl.HIGHEST_PROTOCOL)
+    mlflow.log_artifact("estimand.pkl")
+    
+  mlflow.log_param("effect_modifiers", effect_modifiers)
+  mlflow.log_param("method_name", method_name)
+  for key, value in init_params.items():
+    if 'model' in key:
+      mlflow.sklearn.log_model(value, key)
+    else:
+      mlflow.log_param(key, value)
+
+  return mlflow.pyfunc.log_model("effect_estimator", python_model=wrappedEstimator)
+
+# COMMAND ----------
+
+with mlflow.start_run(run_name="tech_support_total_effect_estimator"):
+  effect_modifiers = ["Size", "Global Flag"]
+  method_name = "backdoor.econml.dml.LinearDML"
+  init_params = {
+    "model_t": model_t,
+    "model_y": model_y,
+    "linear_first_stages": True,
+    "discrete_treatment": True,
+    "cv": 3,
+    "mc_iters": 1,
+  }
+
+  tech_support_total_effect_estimate = tech_support_effect_model.estimate_effect(
+      tech_support_total_effect_identified_estimand,
+      effect_modifiers=effect_modifiers, 
+      method_name=method_name,
+      method_params={"init_params": init_params},
+  )
+
+  tech_support_total_effect_estimate.interpret()
+  wrappedEstimator = EstimatorWrapper(tech_support_total_effect_estimate._estimator_object)
+
+  tech_support_total_effect_estimator_info = log_results("tech_support_total_effect", 
+                                                          tech_support_total_effect_identified_estimand,
+                                                          effect_modifiers,
+                                                          method_name,
+                                                          init_params,
+                                                          wrappedEstimator)
+
 
 # COMMAND ----------
 
@@ -480,33 +532,43 @@ tech_support_direct_effect_identified_estimand = tech_support_effect_model.ident
     estimand_type="nonparametric-cde",
     method_name="maximal-adjustment",
 )
-
-# estimate
-tech_support_direct_effect_estimate = tech_support_effect_model.estimate_effect(
-    tech_support_direct_effect_identified_estimand,
-    method_name="backdoor.econml.dml.LinearDML",
-    method_params={
-        "init_params": {
-            "model_t": model_t,
-            "model_y": model_y,
-            "linear_first_stages": True,
-            "discrete_treatment": True,
-            "cv": 3,
-            "mc_iters": 1,
-        },
-    },
-)
-
-tech_support_direct_effect_estimate.interpret()
+print(tech_support_direct_effect_identified_estimand) 
 
 # COMMAND ----------
 
-import dowhy
+with mlflow.start_run(run_name="tech_support_direct_effect_estimator"):
+  effect_modifiers = ["Size", "Global Flag"]
+  method_name = "backdoor.econml.dml.LinearDML"
+  init_params = {
+    "model_t": model_t,
+    "model_y": model_y,
+    "linear_first_stages": True,
+    "discrete_treatment": True,
+    "cv": 3,
+    "mc_iters": 1,
+  }
+  
+  tech_support_direct_effect_estimate = tech_support_effect_model.estimate_effect(
+      tech_support_direct_effect_identified_estimand,
+      effect_modifiers=effect_modifiers, 
+      method_name=method_name,
+      method_params={"init_params": init_params},
+  )
+
+  tech_support_direct_effect_estimate.interpret()
+  wrappedEstimator = EstimatorWrapper(tech_support_direct_effect_estimate._estimator_object)
+  tech_support_direct_effect_estimator_info = log_results("tech_support_direct_effect", 
+                                                          tech_support_direct_effect_identified_estimand,
+                                                          effect_modifiers,
+                                                          method_name,
+                                                          init_params,
+                                                          wrappedEstimator)
+
+# COMMAND ----------
 
 discount_effect_model = dowhy.CausalModel(data=raw_df,
                      graph=graph,
                      treatment="Discount", 
-                     effect_modifiers=["Size", "Global Flag"], 
                      outcome="Revenue"
                      )
 
@@ -519,24 +581,36 @@ print(identified_discount_effect_estimand)
 
 # COMMAND ----------
 
-# estimate
-discount_effect_estimate = discount_effect_model.estimate_effect(
-    identified_discount_effect_estimand,
-    confidence_intervals=True,
-    method_name="backdoor.econml.dml.LinearDML",
-    method_params={
-        "init_params": {
-            "model_t": model_t,
-            "model_y": model_y,
-            "linear_first_stages": True,
-            "discrete_treatment": True,
-            "cv": 3,
-            "mc_iters": 1,
-        },
-    },
-)
+with mlflow.start_run(run_name="discount_effect_estimator"):
+  effect_modifiers = ["Size", "Global Flag"]
+  method_name = "backdoor.econml.dml.LinearDML"
+  init_params = {
+    "model_t": model_t,
+    "model_y": model_y,
+    "linear_first_stages": True,
+    "discrete_treatment": True,
+    "cv": 3,
+    "mc_iters": 1,
+  }
+  
+  discount_effect_estimate = discount_effect_model.estimate_effect(
+      identified_discount_effect_estimand, 
+      confidence_intervals=True,
+      effect_modifiers=effect_modifiers,
+      method_name=method_name,
+      method_params={"init_params": init_params},
+  )
 
-discount_effect_estimate.interpret()
+  discount_effect_estimate.interpret()
+
+  wrappedEstimator = EstimatorWrapper(discount_effect_estimate._estimator_object)
+  discount_effect_estimator_info = log_results("discount_effect", 
+                                                identified_discount_effect_estimand,
+                                                effect_modifiers,
+                                                method_name,
+                                                init_params,
+                                                wrappedEstimator)
+
 
 # COMMAND ----------
 
@@ -544,7 +618,10 @@ import dowhy
 from causallearn.utils.GraphUtils import GraphUtils
 
 new_strategy_effect_model = dowhy.CausalModel(
-    data=raw_df, graph=graph, treatment="New Engagement Strategy", outcome="Revenue"
+    data=raw_df, 
+    graph=graph, 
+    treatment="New Engagement Strategy", 
+    outcome="Revenue"
 )
 
 new_strategy_effect_identified_estimand = new_strategy_effect_model.identify_effect(
@@ -669,6 +746,149 @@ for refutation_result in [res_random, res_unobserved, res_placebo, res_subset, r
     
     refutation_df = refutation_df.append(row, ignore_index = True)
 refutation_df
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Make Policy Recommendations
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC In this section, we use EconML tools to visualize differences in conditional average treatment effects across customers and select an optimal investment plan for each customer.
+# MAGIC
+# MAGIC In order to decide whether to offer each investment to the customer, we need to know the cost of providing the incentive as well as the benefits of doing so. In this step we define a cost function to specify how expensive it would be to provide each kind of incentive to each customer. In other data samples you can define these costs as a function of customer features, upload a matrix of costs, or set constant costs for each treatment (the default is zero). In this example, we set the cost of ```discount``` to be a fix value of $7000 per account, while the cost of ```tech support``` is $100 per PC.
+
+# COMMAND ----------
+
+# Define cost function
+def cost_fn_interaction(raw_data):
+    t1_cost = raw_data[["PC Count"]].values * 100
+    t2_cost = np.ones((raw_data.shape[0], 1)) * 7000
+    return np.hstack([t1_cost, t2_cost, t1_cost + t2_cost])
+
+# Transform T to one-dimensional array with consecutive integer encoding
+def treat_map(t):
+    return np.dot(t, 2 ** np.arange(t.shape[0]))
+
+# COMMAND ----------
+
+# Model wrapper for EconML model 
+class EconMLModelWrapper(mlflow.pyfunc.PythonModel):
+  def __init__(self, model):
+    self.model = model
+
+# COMMAND ----------
+
+# define input variables for composite treatment model
+effect_modifiers = ["Size", "Global Flag"]
+treatment_columns = ["Tech Support", "Discount", "New Engagement Strategy"]
+outcome = 'Revenue'
+collider_column = 'Planning Summit'
+X_policy = raw_df[effect_modifiers + ['PC Count']]
+W_with_mediator = raw_df.drop(columns = treatment_columns + [outcome] + effect_modifiers + [collider_column])
+Y = raw_df[outcome]
+
+with mlflow.start_run(run_name="composite_treatment_model"):
+
+  composite_treatment = raw_df[['Tech Support', 'Discount']].apply(treat_map, axis = 1).rename('Composite Treatment')
+  composite_model = LinearDML(
+      model_t = model_t,
+      model_y = model_y,
+      discrete_treatment=True, 
+      linear_first_stages=True,
+      mc_iters=10
+  )
+  
+  composite_model.fit(Y=Y, T=composite_treatment, X=X_policy, W=W_with_mediator)
+  
+  mlflow.set_tags({"type": "composite_treatment_model"})
+  mlflow.log_param("composite_treatment", ['Tech Support','Discount'])
+  mlflow.sklearn.log_model(model_t, "model_t")
+  mlflow.sklearn.log_model(model_y, "model_y")
+  
+  mlflow.pyfunc.log_model("composite_treatment_model", python_model=EconMLModelWrapper(composite_model))
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Deriving a Rule for Allocating Investments
+# MAGIC
+# MAGIC EconML's policy tree interpreter fits a regression tree on the set of conditional average treatment effects estimated earlier. The interpreter divides the sample into groups that all respond similarly to treatments, and recommends the optimal treatment for each group, or leaf. This same rule can be applied to pick treatments for new samples of customers with the same characteristics. Set the depth option to allow the intpreter to create more or fewer groups (a depth of 2 creates a maximum of 4 groups).
+
+# COMMAND ----------
+
+est = SingleTreePolicyInterpreter(random_state=1,
+                     min_impurity_decrease=0.1,
+                     min_samples_leaf=40,
+                     max_depth=2)
+
+est.interpret(composite_model, X_policy, sample_treatment_costs = cost_fn_interaction(raw_df))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Observe recommended treatment policies
+
+# COMMAND ----------
+
+# MAGIC %matplotlib inline
+# MAGIC plt.figure(figsize=(15, 5))
+# MAGIC est.plot(treatment_names=['None', 'Tech Support', 'Discount', 'Tech Support and Discount'], feature_names=['Global Flag', 'Size', 'PC Count'])
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Individualized policy recommendations 
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC For our current sample of customers, we can also identify the best treatment plan for each individual customer based on their CATE. We use the model's `const_marginal_effect` method to find the counterfactual treatment effect for each possible treatment. We then subtract the treatment cost and choose the treatment with the highest return. That is the recommended policy.
+# MAGIC
+# MAGIC To visualize this output, we plot each customer based on their PC count and past revenue, the most important determinants of treatment according to the tree interpreter, and color code them based on recommended treatment.
+
+# COMMAND ----------
+
+# MAGIC %md Here we are loading our estimators from MLflow using ```mlflow.pyfunc.load_model``` method. 
+
+# COMMAND ----------
+
+estimator_info = [tech_support_direct_effect_estimator_info, discount_effect_estimator_info]
+models = [mlflow.pyfunc.load_model(model_uri=info.model_uri) for info in estimator_info]
+
+# COMMAND ----------
+
+effects = np.hstack([model.predict(raw_df[effect_modifiers]) for model in models])
+effects_with_interaction = np.hstack([effects, effects.sum(axis=1, keepdims=True)])
+net_effects = effects_with_interaction - cost_fn_interaction(raw_df)
+net_effects_with_control = np.hstack([np.zeros(shape = (raw_df[effect_modifiers].shape[0], 1)), net_effects])
+
+# COMMAND ----------
+
+recommended_T = net_effects_with_control.argmax(axis = 1) # Data sample
+
+# COMMAND ----------
+
+# MAGIC %matplotlib inline
+# MAGIC all_treatments = np.array(['None', 'Tech Support', 'Discount', 'Tech Support and Discount'])
+# MAGIC ax1 = sns.scatterplot(
+# MAGIC     x=raw_df['Size'],
+# MAGIC     y=raw_df["PC Count"],
+# MAGIC     hue=all_treatments[recommended_T],
+# MAGIC     hue_order=all_treatments,
+# MAGIC     cmap="Dark2",
+# MAGIC     s=40,
+# MAGIC )
+# MAGIC plt.legend(title="Investment Policy")
+# MAGIC plt.setp(
+# MAGIC     ax1,
+# MAGIC     xlabel="Customer Size",
+# MAGIC     ylabel="PC Count",
+# MAGIC     title="Optimal Investment Policy by Customer",
+# MAGIC )
+# MAGIC plt.show()
 
 # COMMAND ----------
 
