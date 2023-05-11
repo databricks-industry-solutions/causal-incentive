@@ -285,6 +285,10 @@ trueg.add_edge(T_cols[2], collider)
 trueg.add_edge(ynode, collider)
 # collider
 
+trueg.add_edge("Size", "IT Spend")
+trueg.add_edge("PC Count", "Employee Count")
+
+
 dowhy.gcm.util.plot(trueg, figure_size=(20, 20))
 
 # COMMAND ----------
@@ -441,7 +445,6 @@ model_y = make_pipeline(ct, Lasso(alpha=20)) # model used to predict outcome
 # COMMAND ----------
 
 import dowhy
-from causallearn.utils.GraphUtils import GraphUtils
 
 tech_support_effect_model = dowhy.CausalModel(data=raw_df,
                      graph=graph,
@@ -572,12 +575,12 @@ discount_effect_model = dowhy.CausalModel(data=raw_df,
                      outcome="Revenue"
                      )
 
-identified_discount_effect_estimand = discount_effect_model.identify_effect(
+discount_effect_identified_estimand = discount_effect_model.identify_effect(
     estimand_type="nonparametric-ate",
     method_name="maximal-adjustment",
 )
 
-print(identified_discount_effect_estimand)
+print(discount_effect_identified_estimand)
 
 # COMMAND ----------
 
@@ -614,8 +617,22 @@ with mlflow.start_run(run_name="discount_effect_estimator"):
 
 # COMMAND ----------
 
+discount_effect_model = dowhy.CausalModel(data=raw_df,
+                     graph=graph,
+                     treatment="Discount", 
+                     outcome="Revenue"
+                     )
+
+identified_discount_effect_estimand = discount_effect_model.identify_effect(
+    estimand_type="nonparametric-ate",
+    method_name="maximal-adjustment",
+)
+
+print(identified_discount_effect_estimand)
+
+# COMMAND ----------
+
 import dowhy
-from causallearn.utils.GraphUtils import GraphUtils
 
 new_strategy_effect_model = dowhy.CausalModel(
     data=raw_df, 
@@ -678,17 +695,32 @@ comparison_df[
 
 # COMMAND ----------
 
-res_random = tech_support_effect_model.refute_estimate(
+res_random_common_cause = tech_support_effect_model.refute_estimate(
     tech_support_direct_effect_identified_estimand,
     tech_support_direct_effect_estimate,
+    show_progress_bar=True,
     method_name="random_common_cause",
-    num_simulations=20,
-    n_jobs=2,
+    num_simulations=1000,
+    n_jobs=16,
 )
 
-res_unobserved = tech_support_effect_model.refute_estimate(
+refutation_random_common_cause_df = pd.DataFrame([{
+        "Refutation Type": res_random_common_cause.refutation_type,
+        "Estimated Effect": res_random_common_cause.estimated_effect,
+        "New Effect": res_random_common_cause.new_effect,
+        "Refutation Result (p value)": res_random_common_cause.refutation_result["p_value"] 
+    }])
+
+refutation_random_common_cause_df  
+
+# COMMAND ----------
+
+mlflow.autolog(disable=True)
+
+res_unobserved_common_cause = tech_support_effect_model.refute_estimate(
     tech_support_direct_effect_identified_estimand,
     tech_support_direct_effect_estimate,
+    show_progress_bar=True,
     method_name="add_unobserved_common_cause",
     confounders_effect_on_treatment="binary_flip",
     confounders_effect_on_outcome="linear",
@@ -696,24 +728,60 @@ res_unobserved = tech_support_effect_model.refute_estimate(
     effect_fraction_on_outcome=0.05,
 )
 
+refutation_unobserved_common_cause_df = pd.DataFrame([{
+        "Refutation Type": res_unobserved_common_cause.refutation_type,
+        "Estimated Effect": res_unobserved_common_cause.estimated_effect,
+        "New Effect": res_unobserved_common_cause.new_effect,
+        "Refutation Result (p value)": None 
+    }])
+
+refutation_unobserved_common_cause_df  
+
+# COMMAND ----------
+
 res_placebo = tech_support_effect_model.refute_estimate(
     tech_support_direct_effect_identified_estimand,
     tech_support_direct_effect_estimate,
+    show_progress_bar=True,
     method_name="placebo_treatment_refuter",
     placebo_type="permute",
-    num_simulations=20,
-    n_jobs=2,
+    num_simulations=1000,
+    n_jobs=16,
 )
+
+refutation_placebo_df = pd.DataFrame([{
+        "Refutation Type": res_placebo.refutation_type,
+        "Estimated Effect": res_placebo.estimated_effect,
+        "New Effect": res_placebo.new_effect,
+        "Refutation Result (p value)": res_placebo.refutation_result["p_value"] 
+    }])
+
+refutation_placebo_df  
+
+# COMMAND ----------
 
 res_subset = tech_support_effect_model.refute_estimate(
     tech_support_direct_effect_identified_estimand,
     tech_support_direct_effect_estimate,
+    show_progress_bar=True,
     method_name="data_subset_refuter",
     subset_fraction=0.8,
-    num_simulations=20,
-    n_jobs=2,
+    num_simulations=1000,
+    n_jobs=16,
 )
 
+refutation_subset_df = pd.DataFrame([{
+        "Refutation Type": res_subset.refutation_type,
+        "Estimated Effect": res_subset.estimated_effect,
+        "New Effect": res_subset.new_effect,
+        "Refutation Result (p value)": res_subset.refutation_result["p_value"] 
+    }])
+
+refutation_subset_df  
+
+# COMMAND ----------
+
+mlflow.autolog(disable=True)
 
 coefficients = np.array([10, 0.02])
 bias = 1000
@@ -724,27 +792,32 @@ def linear_gen(df):
     return y_new
 
 
-ref = tech_support_effect_model.refute_estimate(
+res_dummy_outcome = tech_support_effect_model.refute_estimate(
     tech_support_direct_effect_identified_estimand,
     tech_support_direct_effect_estimate,
+    show_progress_bar=True,
     method_name="dummy_outcome_refuter",
     outcome_function=linear_gen,
-)
-res_dummy_outcome = ref[0]
+)[0]
+
+refutation_dummy_outcome_df = pd.DataFrame([{
+        "Refutation Type": res_dummy_outcome.refutation_type,
+        "Estimated Effect": res_dummy_outcome.estimated_effect,
+        "New Effect": res_dummy_outcome.new_effect,
+        "Refutation Result (p value)": res_dummy_outcome.refutation_result["p_value"] 
+    }])
+
+refutation_dummy_outcome_df  
 
 # COMMAND ----------
 
-refutation_df = pd.DataFrame()
-for refutation_result in [res_random, res_unobserved, res_placebo, res_subset, ref[0]]:
-    
-    row = {
-        'Refutation Type': refutation_result.refutation_type,
-        'Estimated Effect': refutation_result.estimated_effect,
-        'New Effect': refutation_result.new_effect,
-        'Refutation Result (p value)': refutation_result.refutation_result['p_value'] if refutation_result.refutation_result else None,
-    }
-    
-    refutation_df = refutation_df.append(row, ignore_index = True)
+refutation_df = pd.concat([
+        refutation_random_common_cause_df,
+        refutation_unobserved_common_cause_df,
+        refutation_subset_df,
+        refutation_placebo_df,
+        refutation_dummy_outcome_df,
+    ])
 refutation_df
 
 # COMMAND ----------
@@ -780,6 +853,7 @@ class EconMLModelWrapper(mlflow.pyfunc.PythonModel):
 
 # COMMAND ----------
 
+mlflow.autolog(disable=False)
 # define input variables for composite treatment model
 effect_modifiers = ["Size", "Global Flag"]
 treatment_columns = ["Tech Support", "Discount", "New Engagement Strategy"]
