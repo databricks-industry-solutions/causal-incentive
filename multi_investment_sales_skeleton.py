@@ -496,7 +496,7 @@ def log_results(effect, estimand, effect_modifiers, method_name, init_params, wr
 
 # COMMAND ----------
 
-with mlflow.start_run():
+with mlflow.start_run(run_name="tech_support_total_effect_estimator"):
   effect_modifiers = ["Size", "Global Flag"]
   method_name = "backdoor.econml.dml.LinearDML"
   init_params = {
@@ -536,7 +536,7 @@ print(tech_support_direct_effect_identified_estimand)
 
 # COMMAND ----------
 
-with mlflow.start_run():
+with mlflow.start_run(run_name="tech_support_direct_effect_estimator"):
   effect_modifiers = ["Size", "Global Flag"]
   method_name = "backdoor.econml.dml.LinearDML"
   init_params = {
@@ -581,7 +581,7 @@ print(identified_discount_effect_estimand)
 
 # COMMAND ----------
 
-with mlflow.start_run():
+with mlflow.start_run(run_name="discount_effect_estimator"):
   effect_modifiers = ["Size", "Global Flag"]
   method_name = "backdoor.econml.dml.LinearDML"
   init_params = {
@@ -757,7 +757,7 @@ refutation_df
 # MAGIC %md
 # MAGIC In this section, we use EconML tools to visualize differences in conditional average treatment effects across customers and select an optimal investment plan for each customer.
 # MAGIC
-# MAGIC In order to decide whether to offer each investment to the customer, we need to know the cost of providing the incentive as well as the benefits of doing so. In this step we define a cost function to specify how expensive it would be to provide each kind of incentive to each customer. In other data samples you can define these costs as a function of customer features, upload a matrix of costs, or set constant costs for each treatment (the default is zero).
+# MAGIC In order to decide whether to offer each investment to the customer, we need to know the cost of providing the incentive as well as the benefits of doing so. In this step we define a cost function to specify how expensive it would be to provide each kind of incentive to each customer. In other data samples you can define these costs as a function of customer features, upload a matrix of costs, or set constant costs for each treatment (the default is zero). In this example, we set the cost of ```discount``` to be a fix value of $7000 per account, while the cost of ```tech support``` is $100 per PC.
 
 # COMMAND ----------
 
@@ -773,6 +773,13 @@ def treat_map(t):
 
 # COMMAND ----------
 
+# Model wrapper for EconML model 
+class EconMLModelWrapper(mlflow.pyfunc.PythonModel):
+  def __init__(self, model):
+    self.model = model
+
+# COMMAND ----------
+
 # define input variables for composite treatment model
 effect_modifiers = ["Size", "Global Flag"]
 treatment_columns = ["Tech Support", "Discount", "New Engagement Strategy"]
@@ -782,15 +789,26 @@ X_policy = raw_df[effect_modifiers + ['PC Count']]
 W_with_mediator = raw_df.drop(columns = treatment_columns + [outcome] + effect_modifiers + [collider_column])
 Y = raw_df[outcome]
 
-composite_treatment = raw_df[['Tech Support', 'Discount']].apply(treat_map, axis = 1).rename('Composite Treatment')
-composite_model = LinearDML(
-    model_t = model_t,
-    model_y = model_y,
-    discrete_treatment=True, 
-    linear_first_stages=True,
-    mc_iters=10
-)
-composite_model.fit(Y=Y, T=composite_treatment, X=X_policy, W=W_with_mediator)
+with mlflow.start_run(run_name="composite_treatment_model"):
+
+  composite_treatment = raw_df[['Tech Support', 'Discount']].apply(treat_map, axis = 1).rename('Composite Treatment')
+  composite_model = LinearDML(
+      model_t = model_t,
+      model_y = model_y,
+      discrete_treatment=True, 
+      linear_first_stages=True,
+      mc_iters=10
+  )
+  
+  composite_model.fit(Y=Y, T=composite_treatment, X=X_policy, W=W_with_mediator)
+  
+  mlflow.set_tags({"type": "composite_treatment_model"})
+  mlflow.log_param("composite_treatment", ['Tech Support','Discount'])
+  mlflow.sklearn.log_model(model_t, "model_t")
+  mlflow.sklearn.log_model(model_y, "model_y")
+  
+  mlflow.pyfunc.log_model("composite_treatment_model", python_model=EconMLModelWrapper(composite_model))
+
 
 # COMMAND ----------
 
@@ -833,7 +851,7 @@ est.interpret(composite_model, X_policy, sample_treatment_costs = cost_fn_intera
 
 # COMMAND ----------
 
-# MAGIC %md Here we are loading our estitors from MLflow using ```mlflow.pyfunc.load_model``` method. 
+# MAGIC %md Here we are loading our estimators from MLflow using ```mlflow.pyfunc.load_model``` method. 
 
 # COMMAND ----------
 
