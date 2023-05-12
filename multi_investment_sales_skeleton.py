@@ -94,16 +94,29 @@ np.random.seed(1)
 
 n = 10000
 
-global_flag = np.random.binomial(n = 1, p = 0.2, size = n)
-major_flag = np.random.binomial(n = 1, p = 0.2, size = n)
-smc_flag = np.random.binomial(n = 1, p = 0.5, size = n)
-commercial_flag = np.random.binomial(n = 1, p = 0.7, size = n)
+global_flag = np.random.binomial(n=1, p=0.2, size=n)
+major_flag = np.random.binomial(n=1, p=0.2, size=n)
+smc_flag = np.random.binomial(n=1, p=0.5, size=n)
+commercial_flag = np.random.binomial(n=1, p=0.7, size=n)
 
-size = np.random.exponential(scale = 100000, size = n) + np.random.uniform(low = 5000, high = 15000, size = n)
-it_spend = np.exp(np.log(size) - 1.4 + np.random.uniform(size = n))
+size = np.random.exponential(scale=100000, size=n) + np.random.uniform(
+    low=5000, high=15000, size=n
+)
+it_spend = np.exp(np.log(size) - 1.4 + np.random.uniform(size=n))
 
-pc_count = np.random.exponential(scale = 50, size = n) + np.random.uniform(low = 5, high = 10, size = n)
-employee_count = np.exp(np.log(pc_count)*0.9 + 0.4 + np.random.uniform(size = n))
+# pc_count = np.random.exponential(scale = 50, size = n) + np.random.uniform(low = 5, high = 10, size = n)
+# employee_count = np.exp(np.log(pc_count)*0.9 + 0.4 + np.random.uniform(size = n))
+
+employee_count = np.exp(
+    np.log(
+        np.random.exponential(scale=50, size=n)
+        + np.random.uniform(low=5, high=10, size=n)
+    )
+    * 0.9
+    + 0.4
+    + np.random.uniform(size=n)
+)
+pc_count = np.exp((np.log(employee_count) - np.random.uniform(size=n) - 0.4) / 0.9 )
 
 size = size.astype(int)
 it_spend = it_spend.astype(int)
@@ -113,16 +126,20 @@ employee_count = employee_count.astype(int)
 
 new_X = pd.DataFrame(
     {
-        'Global Flag': global_flag,
-        'Major Flag': major_flag,
-        'SMC Flag': smc_flag,
-        'Commercial Flag': commercial_flag,
-        'IT Spend': it_spend,
-        'Employee Count': employee_count,
-        'PC Count': pc_count,
-        'Size': size
+        "Global Flag": global_flag,
+        "Major Flag": major_flag,
+        "SMC Flag": smc_flag,
+        "Commercial Flag": commercial_flag,
+        "IT Spend": it_spend,
+        "Employee Count": employee_count,
+        "PC Count": pc_count,
+        "Size": size,
     }
 )
+
+# COMMAND ----------
+
+new_X[new_X["Employee Count"]<new_X["PC Count"]].shape
 
 # COMMAND ----------
 
@@ -593,11 +610,11 @@ with mlflow.start_run(run_name="discount_effect_estimator"):
     "linear_first_stages": True,
     "discrete_treatment": True,
     "cv": 3,
-    "mc_iters": 1,
+    "mc_iters": 10,
   }
   
   discount_effect_estimate = discount_effect_model.estimate_effect(
-      identified_discount_effect_estimand, 
+      discount_effect_identified_estimand, 
       confidence_intervals=True,
       effect_modifiers=effect_modifiers,
       method_name=method_name,
@@ -608,27 +625,12 @@ with mlflow.start_run(run_name="discount_effect_estimator"):
 
   wrappedEstimator = EstimatorWrapper(discount_effect_estimate._estimator_object)
   discount_effect_estimator_info = log_results("discount_effect", 
-                                                identified_discount_effect_estimand,
+                                                discount_effect_identified_estimand,
                                                 effect_modifiers,
                                                 method_name,
                                                 init_params,
                                                 wrappedEstimator)
 
-
-# COMMAND ----------
-
-discount_effect_model = dowhy.CausalModel(data=raw_df,
-                     graph=graph,
-                     treatment="Discount", 
-                     outcome="Revenue"
-                     )
-
-identified_discount_effect_estimand = discount_effect_model.identify_effect(
-    estimand_type="nonparametric-ate",
-    method_name="maximal-adjustment",
-)
-
-print(identified_discount_effect_estimand)
 
 # COMMAND ----------
 
@@ -853,7 +855,7 @@ class EconMLModelWrapper(mlflow.pyfunc.PythonModel):
 
 # COMMAND ----------
 
-mlflow.autolog(disable=False)
+mlflow.autolog(disable=True)
 # define input variables for composite treatment model
 effect_modifiers = ["Size", "Global Flag"]
 treatment_columns = ["Tech Support", "Discount", "New Engagement Strategy"]
