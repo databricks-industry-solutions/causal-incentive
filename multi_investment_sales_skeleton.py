@@ -34,6 +34,9 @@ import pandas as pd
 import pickle as pkl
 import os
 from scipy.special import expit, logit
+import mlflow
+
+mlflow.autolog(disable=True)
 
 # COMMAND ----------
 
@@ -94,16 +97,26 @@ np.random.seed(1)
 
 n = 10000
 
-global_flag = np.random.binomial(n = 1, p = 0.2, size = n)
-major_flag = np.random.binomial(n = 1, p = 0.2, size = n)
-smc_flag = np.random.binomial(n = 1, p = 0.5, size = n)
-commercial_flag = np.random.binomial(n = 1, p = 0.7, size = n)
+global_flag = np.random.binomial(n=1, p=0.2, size=n)
+major_flag = np.random.binomial(n=1, p=0.2, size=n)
+smc_flag = np.random.binomial(n=1, p=0.5, size=n)
+commercial_flag = np.random.binomial(n=1, p=0.7, size=n)
 
-size = np.random.exponential(scale = 100000, size = n) + np.random.uniform(low = 5000, high = 15000, size = n)
-it_spend = np.exp(np.log(size) - 1.4 + np.random.uniform(size = n))
+size = np.random.exponential(scale=100000, size=n) + np.random.uniform(
+    low=5000, high=15000, size=n
+)
+it_spend = np.exp(np.log(size) - 1.4 + np.random.uniform(size=n))
 
-pc_count = np.random.exponential(scale = 50, size = n) + np.random.uniform(low = 5, high = 10, size = n)
-employee_count = np.exp(np.log(pc_count)*0.9 + 0.4 + np.random.uniform(size = n))
+employee_count = np.exp(
+    np.log(
+        np.random.exponential(scale=50, size=n)
+        + np.random.uniform(low=5, high=10, size=n)
+    )
+    * 0.9
+    + 0.4
+    + np.random.uniform(size=n)
+)
+pc_count = np.exp((np.log(employee_count) - np.random.uniform(size=n) - 0.4) / 0.9 )
 
 size = size.astype(int)
 it_spend = it_spend.astype(int)
@@ -113,14 +126,14 @@ employee_count = employee_count.astype(int)
 
 new_X = pd.DataFrame(
     {
-        'Global Flag': global_flag,
-        'Major Flag': major_flag,
-        'SMC Flag': smc_flag,
-        'Commercial Flag': commercial_flag,
-        'IT Spend': it_spend,
-        'Employee Count': employee_count,
-        'PC Count': pc_count,
-        'Size': size
+        "Global Flag": global_flag,
+        "Major Flag": major_flag,
+        "SMC Flag": smc_flag,
+        "Commercial Flag": commercial_flag,
+        "IT Spend": it_spend,
+        "Employee Count": employee_count,
+        "PC Count": pc_count,
+        "Size": size,
     }
 )
 
@@ -285,6 +298,10 @@ trueg.add_edge(T_cols[2], collider)
 trueg.add_edge(ynode, collider)
 # collider
 
+trueg.add_edge("Size", "IT Spend")
+trueg.add_edge("Employee Count", "PC Count")
+
+
 dowhy.gcm.util.plot(trueg, figure_size=(20, 20))
 
 # COMMAND ----------
@@ -298,7 +315,7 @@ from causallearn.search.ConstraintBased.PC import pc
 
 raw_df = new_df.iloc[:,0:14]
 # default parameters
-cg = pc(np.vstack(raw_df.to_numpy()), node_names=raw_df.columns)
+cg = pc(np.vstack(raw_df.to_numpy()), node_names=raw_df.columns, alpha=0.01)
 
 # visualization using pydot
 cg.draw_pydot_graph()
@@ -307,12 +324,8 @@ cg.draw_pydot_graph()
 
 # Adding directions to detected relations
 cg.G.add_directed_edge(node1=cg.G.get_node("Size"), node2=cg.G.get_node("IT Spend"))
-cg.G.add_directed_edge(node1=cg.G.get_node("IT Spend"), node2=cg.G.get_node("Discount"))
 cg.G.add_directed_edge(
     node1=cg.G.get_node("IT Spend"), node2=cg.G.get_node("Tech Support")
-)
-cg.G.add_directed_edge(
-    node1=cg.G.get_node("SMC Flag"), node2=cg.G.get_node("New Engagement Strategy")
 )
 cg.G.add_directed_edge(
     node1=cg.G.get_node("Tech Support"), node2=cg.G.get_node("New Product Adoption")
@@ -435,13 +448,12 @@ ct = ColumnTransformer(
         )
     ], remainder='passthrough')
 
-model_t = make_pipeline(ct, LogisticRegression(C=1300, max_iter=1000)) # model used to predict treatment
+model_t = make_pipeline(ct, LogisticRegression(C=13000, max_iter=1000)) # model used to predict treatment
 model_y = make_pipeline(ct, Lasso(alpha=20)) # model used to predict outcome
 
 # COMMAND ----------
 
 import dowhy
-from causallearn.utils.GraphUtils import GraphUtils
 
 tech_support_effect_model = dowhy.CausalModel(data=raw_df,
                      graph=graph,
@@ -462,69 +474,31 @@ print(tech_support_total_effect_identified_estimand)
 
 # COMMAND ----------
 
-import mlflow
-class EstimatorWrapper(mlflow.pyfunc.PythonModel):
-  def __init__(self, model):
-    self.model = model
-    
-  def predict(self, context, model_input):
-    return self.model.const_marginal_effect(model_input)
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC The custom fuction logs an identified estimand, various parameters and models to MLflow.
 
 # COMMAND ----------
 
-def log_results(effect, estimand, effect_modifiers, method_name, init_params, wrappedEstimator):
-  mlflow.set_tags({"effect": effect})
+effect_modifiers = ["Size", "Global Flag"]
+method_name = "backdoor.econml.dml.LinearDML"
+init_params = {
+  "model_t": model_t,
+  "model_y": model_y,
+  "linear_first_stages": True,
+  "discrete_treatment": True,
+  "cv": 3,
+  "mc_iters": 10,   
+}
 
-  with open("estimand.pkl", 'wb') as output:
-    pkl.dump(estimand, output, pkl.HIGHEST_PROTOCOL)
-    mlflow.log_artifact("estimand.pkl")
-    
-  mlflow.log_param("effect_modifiers", effect_modifiers)
-  mlflow.log_param("method_name", method_name)
-  for key, value in init_params.items():
-    if 'model' in key:
-      mlflow.sklearn.log_model(value, key)
-    else:
-      mlflow.log_param(key, value)
 
-  return mlflow.pyfunc.log_model("effect_estimator", python_model=wrappedEstimator)
+tech_support_total_effect_estimate = tech_support_effect_model.estimate_effect(
+    tech_support_total_effect_identified_estimand,
+    effect_modifiers=effect_modifiers, 
+    method_name=method_name, 
+    method_params={"init_params": init_params},
+)
 
-# COMMAND ----------
-
-with mlflow.start_run(run_name="tech_support_total_effect_estimator"):
-  effect_modifiers = ["Size", "Global Flag"]
-  method_name = "backdoor.econml.dml.LinearDML"
-  init_params = {
-    "model_t": model_t,
-    "model_y": model_y,
-    "linear_first_stages": True,
-    "discrete_treatment": True,
-    "cv": 3,
-    "mc_iters": 1,
-  }
-
-  tech_support_total_effect_estimate = tech_support_effect_model.estimate_effect(
-      tech_support_total_effect_identified_estimand,
-      effect_modifiers=effect_modifiers, 
-      method_name=method_name,
-      method_params={"init_params": init_params},
-  )
-
-  tech_support_total_effect_estimate.interpret()
-  wrappedEstimator = EstimatorWrapper(tech_support_total_effect_estimate._estimator_object)
-
-  tech_support_total_effect_estimator_info = log_results("tech_support_total_effect", 
-                                                          tech_support_total_effect_identified_estimand,
-                                                          effect_modifiers,
-                                                          method_name,
-                                                          init_params,
-                                                          wrappedEstimator)
-
+tech_support_total_effect_estimate.interpret()
 
 # COMMAND ----------
 
@@ -536,33 +510,26 @@ print(tech_support_direct_effect_identified_estimand)
 
 # COMMAND ----------
 
-with mlflow.start_run(run_name="tech_support_direct_effect_estimator"):
-  effect_modifiers = ["Size", "Global Flag"]
-  method_name = "backdoor.econml.dml.LinearDML"
-  init_params = {
-    "model_t": model_t,
-    "model_y": model_y,
-    "linear_first_stages": True,
-    "discrete_treatment": True,
-    "cv": 3,
-    "mc_iters": 1,
-  }
-  
-  tech_support_direct_effect_estimate = tech_support_effect_model.estimate_effect(
-      tech_support_direct_effect_identified_estimand,
-      effect_modifiers=effect_modifiers, 
-      method_name=method_name,
-      method_params={"init_params": init_params},
-  )
 
-  tech_support_direct_effect_estimate.interpret()
-  wrappedEstimator = EstimatorWrapper(tech_support_direct_effect_estimate._estimator_object)
-  tech_support_direct_effect_estimator_info = log_results("tech_support_direct_effect", 
-                                                          tech_support_direct_effect_identified_estimand,
-                                                          effect_modifiers,
-                                                          method_name,
-                                                          init_params,
-                                                          wrappedEstimator)
+effect_modifiers = ["Size", "Global Flag"]
+method_name = "backdoor.econml.dml.LinearDML"
+init_params = {
+  "model_t": model_t,
+  "model_y": model_y,
+  "linear_first_stages": True,
+  "discrete_treatment": True,
+  "cv": 3,
+  "mc_iters": 1,
+}
+
+tech_support_direct_effect_estimate = tech_support_effect_model.estimate_effect(
+    tech_support_direct_effect_identified_estimand,
+    effect_modifiers=effect_modifiers, 
+    method_name=method_name,
+    method_params={"init_params": init_params},
+)
+
+tech_support_direct_effect_estimate.interpret()
 
 # COMMAND ----------
 
@@ -572,50 +539,40 @@ discount_effect_model = dowhy.CausalModel(data=raw_df,
                      outcome="Revenue"
                      )
 
-identified_discount_effect_estimand = discount_effect_model.identify_effect(
+discount_effect_identified_estimand = discount_effect_model.identify_effect(
     estimand_type="nonparametric-ate",
     method_name="maximal-adjustment",
 )
 
-print(identified_discount_effect_estimand)
+print(discount_effect_identified_estimand)
 
 # COMMAND ----------
 
-with mlflow.start_run(run_name="discount_effect_estimator"):
-  effect_modifiers = ["Size", "Global Flag"]
-  method_name = "backdoor.econml.dml.LinearDML"
-  init_params = {
-    "model_t": model_t,
-    "model_y": model_y,
-    "linear_first_stages": True,
-    "discrete_treatment": True,
-    "cv": 3,
-    "mc_iters": 1,
-  }
-  
-  discount_effect_estimate = discount_effect_model.estimate_effect(
-      identified_discount_effect_estimand, 
-      confidence_intervals=True,
-      effect_modifiers=effect_modifiers,
-      method_name=method_name,
-      method_params={"init_params": init_params},
-  )
+effect_modifiers = ["Size", "Global Flag"]
+method_name = "backdoor.econml.dml.LinearDML"
+init_params = {
+  "model_t": model_t,
+  "model_y": model_y,
+  "linear_first_stages": True,
+  "discrete_treatment": True,
+  "cv": 3,
+  "mc_iters": 10,
+}
 
-  discount_effect_estimate.interpret()
+discount_effect_estimate = discount_effect_model.estimate_effect(
+    discount_effect_identified_estimand, 
+    confidence_intervals=True,
+    effect_modifiers=effect_modifiers,
+    method_name=method_name,
+    method_params={"init_params": init_params},
+)
 
-  wrappedEstimator = EstimatorWrapper(discount_effect_estimate._estimator_object)
-  discount_effect_estimator_info = log_results("discount_effect", 
-                                                identified_discount_effect_estimand,
-                                                effect_modifiers,
-                                                method_name,
-                                                init_params,
-                                                wrappedEstimator)
+discount_effect_estimate.interpret()
 
 
 # COMMAND ----------
 
 import dowhy
-from causallearn.utils.GraphUtils import GraphUtils
 
 new_strategy_effect_model = dowhy.CausalModel(
     data=raw_df, 
@@ -678,17 +635,34 @@ comparison_df[
 
 # COMMAND ----------
 
-res_random = tech_support_effect_model.refute_estimate(
+res_random_common_cause = tech_support_effect_model.refute_estimate(
     tech_support_direct_effect_identified_estimand,
     tech_support_direct_effect_estimate,
+    show_progress_bar=True,
     method_name="random_common_cause",
-    num_simulations=20,
-    n_jobs=2,
+    num_simulations=100,
+    n_jobs=16,
 )
 
-res_unobserved = tech_support_effect_model.refute_estimate(
+refutation_random_common_cause_df = pd.DataFrame([{
+        "Refutation Type": res_random_common_cause.refutation_type,
+        "Estimated Effect": res_random_common_cause.estimated_effect,
+        "New Effect": res_random_common_cause.new_effect,
+        "Refutation Result (p value)": res_random_common_cause.refutation_result["p_value"] 
+    }])
+
+refutation_random_common_cause_df  
+
+# COMMAND ----------
+
+import mlflow
+ 
+mlflow.autolog(disable=True)
+
+res_unobserved_common_cause = tech_support_effect_model.refute_estimate(
     tech_support_direct_effect_identified_estimand,
     tech_support_direct_effect_estimate,
+    show_progress_bar=True,
     method_name="add_unobserved_common_cause",
     confounders_effect_on_treatment="binary_flip",
     confounders_effect_on_outcome="linear",
@@ -696,24 +670,61 @@ res_unobserved = tech_support_effect_model.refute_estimate(
     effect_fraction_on_outcome=0.05,
 )
 
+refutation_unobserved_common_cause_df = pd.DataFrame([{
+        "Refutation Type": res_unobserved_common_cause.refutation_type,
+        "Estimated Effect": res_unobserved_common_cause.estimated_effect,
+        "New Effect": res_unobserved_common_cause.new_effect,
+        "Refutation Result (p value)": None 
+    }])
+
+refutation_unobserved_common_cause_df  
+
+# COMMAND ----------
+
 res_placebo = tech_support_effect_model.refute_estimate(
     tech_support_direct_effect_identified_estimand,
     tech_support_direct_effect_estimate,
+    show_progress_bar=True,
     method_name="placebo_treatment_refuter",
     placebo_type="permute",
-    num_simulations=20,
-    n_jobs=2,
+    num_simulations=100,
+    n_jobs=16,
 )
+
+refutation_placebo_df = pd.DataFrame([{
+        "Refutation Type": res_placebo.refutation_type,
+        "Estimated Effect": res_placebo.estimated_effect,
+        "New Effect": res_placebo.new_effect,
+        "Refutation Result (p value)": res_placebo.refutation_result["p_value"] 
+    }])
+
+refutation_placebo_df  
+
+# COMMAND ----------
 
 res_subset = tech_support_effect_model.refute_estimate(
     tech_support_direct_effect_identified_estimand,
     tech_support_direct_effect_estimate,
+    show_progress_bar=True,
     method_name="data_subset_refuter",
     subset_fraction=0.8,
-    num_simulations=20,
-    n_jobs=2,
+    num_simulations=100,
+    n_jobs=16,
 )
 
+refutation_subset_df = pd.DataFrame([{
+        "Refutation Type": res_subset.refutation_type,
+        "Estimated Effect": res_subset.estimated_effect,
+        "New Effect": res_subset.new_effect,
+        "Refutation Result (p value)": res_subset.refutation_result["p_value"] 
+    }])
+
+refutation_subset_df  
+
+# COMMAND ----------
+
+import mlflow
+mlflow.autolog(disable=True)
 
 coefficients = np.array([10, 0.02])
 bias = 1000
@@ -724,27 +735,32 @@ def linear_gen(df):
     return y_new
 
 
-ref = tech_support_effect_model.refute_estimate(
+res_dummy_outcome = tech_support_effect_model.refute_estimate(
     tech_support_direct_effect_identified_estimand,
     tech_support_direct_effect_estimate,
+    show_progress_bar=True,
     method_name="dummy_outcome_refuter",
     outcome_function=linear_gen,
-)
-res_dummy_outcome = ref[0]
+)[0]
+
+refutation_dummy_outcome_df = pd.DataFrame([{
+        "Refutation Type": res_dummy_outcome.refutation_type,
+        "Estimated Effect": res_dummy_outcome.estimated_effect,
+        "New Effect": res_dummy_outcome.new_effect,
+        "Refutation Result (p value)": res_dummy_outcome.refutation_result["p_value"] 
+    }])
+
+refutation_dummy_outcome_df  
 
 # COMMAND ----------
 
-refutation_df = pd.DataFrame()
-for refutation_result in [res_random, res_unobserved, res_placebo, res_subset, ref[0]]:
-    
-    row = {
-        'Refutation Type': refutation_result.refutation_type,
-        'Estimated Effect': refutation_result.estimated_effect,
-        'New Effect': refutation_result.new_effect,
-        'Refutation Result (p value)': refutation_result.refutation_result['p_value'] if refutation_result.refutation_result else None,
-    }
-    
-    refutation_df = refutation_df.append(row, ignore_index = True)
+refutation_df = pd.concat([
+        refutation_random_common_cause_df,
+        refutation_unobserved_common_cause_df,
+        refutation_subset_df,
+        refutation_placebo_df,
+        refutation_dummy_outcome_df,
+    ])
 refutation_df
 
 # COMMAND ----------
@@ -758,84 +774,6 @@ refutation_df
 # MAGIC In this section, we use EconML tools to visualize differences in conditional average treatment effects across customers and select an optimal investment plan for each customer.
 # MAGIC
 # MAGIC In order to decide whether to offer each investment to the customer, we need to know the cost of providing the incentive as well as the benefits of doing so. In this step we define a cost function to specify how expensive it would be to provide each kind of incentive to each customer. In other data samples you can define these costs as a function of customer features, upload a matrix of costs, or set constant costs for each treatment (the default is zero). In this example, we set the cost of ```discount``` to be a fix value of $7000 per account, while the cost of ```tech support``` is $100 per PC.
-
-# COMMAND ----------
-
-# Define cost function
-def cost_fn_interaction(raw_data):
-    t1_cost = raw_data[["PC Count"]].values * 100
-    t2_cost = np.ones((raw_data.shape[0], 1)) * 7000
-    return np.hstack([t1_cost, t2_cost, t1_cost + t2_cost])
-
-# Transform T to one-dimensional array with consecutive integer encoding
-def treat_map(t):
-    return np.dot(t, 2 ** np.arange(t.shape[0]))
-
-# COMMAND ----------
-
-# Model wrapper for EconML model 
-class EconMLModelWrapper(mlflow.pyfunc.PythonModel):
-  def __init__(self, model):
-    self.model = model
-
-# COMMAND ----------
-
-# define input variables for composite treatment model
-effect_modifiers = ["Size", "Global Flag"]
-treatment_columns = ["Tech Support", "Discount", "New Engagement Strategy"]
-outcome = 'Revenue'
-collider_column = 'Planning Summit'
-X_policy = raw_df[effect_modifiers + ['PC Count']]
-W_with_mediator = raw_df.drop(columns = treatment_columns + [outcome] + effect_modifiers + [collider_column])
-Y = raw_df[outcome]
-
-with mlflow.start_run(run_name="composite_treatment_model"):
-
-  composite_treatment = raw_df[['Tech Support', 'Discount']].apply(treat_map, axis = 1).rename('Composite Treatment')
-  composite_model = LinearDML(
-      model_t = model_t,
-      model_y = model_y,
-      discrete_treatment=True, 
-      linear_first_stages=True,
-      mc_iters=10
-  )
-  
-  composite_model.fit(Y=Y, T=composite_treatment, X=X_policy, W=W_with_mediator)
-  
-  mlflow.set_tags({"type": "composite_treatment_model"})
-  mlflow.log_param("composite_treatment", ['Tech Support','Discount'])
-  mlflow.sklearn.log_model(model_t, "model_t")
-  mlflow.sklearn.log_model(model_y, "model_y")
-  
-  mlflow.pyfunc.log_model("composite_treatment_model", python_model=EconMLModelWrapper(composite_model))
-
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Deriving a Rule for Allocating Investments
-# MAGIC
-# MAGIC EconML's policy tree interpreter fits a regression tree on the set of conditional average treatment effects estimated earlier. The interpreter divides the sample into groups that all respond similarly to treatments, and recommends the optimal treatment for each group, or leaf. This same rule can be applied to pick treatments for new samples of customers with the same characteristics. Set the depth option to allow the intpreter to create more or fewer groups (a depth of 2 creates a maximum of 4 groups).
-
-# COMMAND ----------
-
-est = SingleTreePolicyInterpreter(random_state=1,
-                     min_impurity_decrease=0.1,
-                     min_samples_leaf=40,
-                     max_depth=2)
-
-est.interpret(composite_model, X_policy, sample_treatment_costs = cost_fn_interaction(raw_df))
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC Observe recommended treatment policies
-
-# COMMAND ----------
-
-# MAGIC %matplotlib inline
-# MAGIC plt.figure(figsize=(15, 5))
-# MAGIC est.plot(treatment_names=['None', 'Tech Support', 'Discount', 'Tech Support and Discount'], feature_names=['Global Flag', 'Size', 'PC Count'])
 
 # COMMAND ----------
 
@@ -855,40 +793,106 @@ est.interpret(composite_model, X_policy, sample_treatment_costs = cost_fn_intera
 
 # COMMAND ----------
 
-estimator_info = [tech_support_direct_effect_estimator_info, discount_effect_estimator_info]
-models = [mlflow.pyfunc.load_model(model_uri=info.model_uri) for info in estimator_info]
+import mlflow
+
+
+class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
+    def __init__(self, models_dictionary, effect_modifiers):
+        self.models_dictionary = models_dictionary
+        self.effect_modifiers = effect_modifiers
+
+    def _estimate_isolated_effect(self, model_input):
+        return pd.DataFrame(
+            {
+                f"{key} net effect": np.hstack(
+                    model.const_marginal_effect(model_input[self.effect_modifiers])
+                )
+                for key, model in self.models_dictionary.items()
+            }
+        )
+
+    def _estimate_interaction_effect(self, estimated_effects):
+        effects_interaction = (
+            " and ".join(self.models_dictionary.keys()) + " net effect"
+        )
+        estimated_effects[effects_interaction] = estimated_effects.sum(axis=1)
+        return estimated_effects
+
+    def _cost_fn_interaction(self, data):
+        t1_cost = data[["PC Count"]].values * 100
+        t2_cost = np.ones((data.shape[0], 1)) * 7000
+        return np.hstack([t1_cost, t2_cost, t1_cost + t2_cost])
+
+    def _estimate_net_effects(self, estimated_effects, model_input):
+        return estimated_effects - self._cost_fn_interaction(model_input)
+
+    def _get_recommended_incentive(self, net_effects):
+        net_effects["recommended incentive"]= net_effects.idxmax(axis=1).apply(
+          lambda x: x.replace(" net effect", "")
+          )
+        net_effects["recommended incentive net effect"] = net_effects.max(axis=1)  
+        return net_effects
+
+    def predict(self, context, model_input):
+        estimated_effects = self._estimate_isolated_effect(model_input)
+        estimated_effects = self._estimate_interaction_effect(estimated_effects)
+        net_effects = self._estimate_net_effects(estimated_effects, model_input)
+        net_effects["no incentive net effect"] = 0
+        net_effects = self._get_recommended_incentive(net_effects) 
+        return model_input.join(net_effects)
 
 # COMMAND ----------
 
-effects = np.hstack([model.predict(raw_df[effect_modifiers]) for model in models])
-effects_with_interaction = np.hstack([effects, effects.sum(axis=1, keepdims=True)])
-net_effects = effects_with_interaction - cost_fn_interaction(raw_df)
-net_effects_with_control = np.hstack([np.zeros(shape = (raw_df[effect_modifiers].shape[0], 1)), net_effects])
+from mlflow.models.signature import infer_signature
+
+model_name = "personalized_incentive_recommender"
+with mlflow.start_run(run_name=f"{model_name}_run") as experiment_run:    
+    personalizedIncentiveRecommender = PersonalizedIncentiveRecommender(
+        models_dictionary={
+          "tech support": tech_support_total_effect_estimate._estimator_object,
+          "discount": discount_effect_estimate._estimator_object,
+        },
+        effect_modifiers=["Size", "Global Flag"],
+    )
+    mlflow.pyfunc.log_model(
+        artifact_path="model",
+        python_model=personalizedIncentiveRecommender,
+        signature=infer_signature(raw_df, personalizedIncentiveRecommender.predict({},raw_df))
+    )
+
+model_details = mlflow.register_model(
+    model_uri=f"runs:/{experiment_run.info.run_id}/model",
+    name=model_name,
+)
+
+displayHTML(f"<h2>model name: '{model_details.name}'</h2>")
+displayHTML(f"<h2>model version: {model_details.version}</h2>")
 
 # COMMAND ----------
 
-recommended_T = net_effects_with_control.argmax(axis = 1) # Data sample
+loaded_model = mlflow.pyfunc.load_model(f"models:/{model_details.name}/{model_details.version}" )
+
+final_df = loaded_model.predict(raw_df)
+
+display(final_df)
 
 # COMMAND ----------
 
-# MAGIC %matplotlib inline
-# MAGIC all_treatments = np.array(['None', 'Tech Support', 'Discount', 'Tech Support and Discount'])
-# MAGIC ax1 = sns.scatterplot(
-# MAGIC     x=raw_df['Size'],
-# MAGIC     y=raw_df["PC Count"],
-# MAGIC     hue=all_treatments[recommended_T],
-# MAGIC     hue_order=all_treatments,
-# MAGIC     cmap="Dark2",
-# MAGIC     s=40,
-# MAGIC )
-# MAGIC plt.legend(title="Investment Policy")
-# MAGIC plt.setp(
-# MAGIC     ax1,
-# MAGIC     xlabel="Customer Size",
-# MAGIC     ylabel="PC Count",
-# MAGIC     title="Optimal Investment Policy by Customer",
-# MAGIC )
-# MAGIC plt.show()
+everage_effect_recommended_incentive_df = pd.DataFrame(final_df[
+            [
+                "tech support net effect",
+                "discount net effect",
+                "tech support and discount net effect",
+                "no incentive net effect",
+                "recommended incentive net effect",
+            ]
+        ].mean()
+).T
+
+everage_effect_recommended_incentive_df.columns = ["if always 'tech support' incentive", "if always 'discount' incentive", "when always 'tech support and discount' incentive", "if no incentive", "with recommended incentive"]
+everage_effect_recommended_incentive_df = everage_effect_recommended_incentive_df.T
+everage_effect_recommended_incentive_df.columns = ["Average net return per account in dollars"]
+everage_effect_recommended_incentive_df
 
 # COMMAND ----------
 
