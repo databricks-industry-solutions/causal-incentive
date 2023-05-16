@@ -1,49 +1,14 @@
 # Databricks notebook source
-# MAGIC %sh sudo apt-get update
+# MAGIC %run ./util/notebook-config
 
 # COMMAND ----------
 
-# MAGIC %sh sudo apt-get install -y graphviz libgraphviz-dev 
-
-# COMMAND ----------
-
-# MAGIC %pip install pygraphviz --quiet
-
-# COMMAND ----------
-
-# MAGIC %pip install networkx --quiet
-
-# COMMAND ----------
-
-# MAGIC %pip install dowhy --quiet
-
-# COMMAND ----------
-
-# MAGIC %pip install causal-learn --quiet
-
-# COMMAND ----------
-
-# MAGIC %pip install econml --quiet
-
-# COMMAND ----------
-
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-import pickle as pkl
-import os
-from scipy.special import expit, logit
-import mlflow
-
-mlflow.autolog(disable=True)
+# MAGIC %run ./util/generate-data
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Data Description and Causal Graph
-# MAGIC
-# MAGIC (graph generation code commented out to avoid potential issues with dependencies)
+# MAGIC # Data Description
 
 # COMMAND ----------
 
@@ -82,380 +47,80 @@ mlflow.autolog(disable=True)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Data Generation
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Generate covariates W, X.
-# MAGIC
-# MAGIC Most features are independent but some are correlated.
-
-# COMMAND ----------
-
-np.random.seed(1)
-
-n = 10000
-
-global_flag = np.random.binomial(n=1, p=0.2, size=n)
-major_flag = np.random.binomial(n=1, p=0.2, size=n)
-smc_flag = np.random.binomial(n=1, p=0.5, size=n)
-commercial_flag = np.random.binomial(n=1, p=0.7, size=n)
-
-size = np.random.exponential(scale=100000, size=n) + np.random.uniform(
-    low=5000, high=15000, size=n
-)
-it_spend = np.exp(np.log(size) - 1.4 + np.random.uniform(size=n))
-
-employee_count = np.exp(
-    np.log(
-        np.random.exponential(scale=50, size=n)
-        + np.random.uniform(low=5, high=10, size=n)
-    )
-    * 0.9
-    + 0.4
-    + np.random.uniform(size=n)
-)
-pc_count = np.exp((np.log(employee_count) - np.random.uniform(size=n) - 0.4) / 0.9 )
-
-size = size.astype(int)
-it_spend = it_spend.astype(int)
-pc_count = pc_count.astype(int)
-employee_count = employee_count.astype(int)
-
-
-new_X = pd.DataFrame(
-    {
-        "Global Flag": global_flag,
-        "Major Flag": major_flag,
-        "SMC Flag": smc_flag,
-        "Commercial Flag": commercial_flag,
-        "IT Spend": it_spend,
-        "Employee Count": employee_count,
-        "PC Count": pc_count,
-        "Size": size,
-    }
-)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Generate treatment from covariates
-
-# COMMAND ----------
-
-# controls
-W_cols = ['Major Flag', 'SMC Flag', 'Commercial Flag', 'IT Spend', 'Employee Count', 'PC Count']
-
-# Tech Support
-coefs_W_tech = np.array([0, 0, 0, 0.00001, 0, 0])
-const_tech = -0.465
-noise_tech = np.random.normal(scale=2.0, size = n)
-z_tech = new_X[W_cols] @ coefs_W_tech + const_tech + noise_tech
-prob_tech = expit(z_tech)
-tech_support = np.random.binomial(n = 1, p = prob_tech, size = n)
-
-# Discount
-coefs_W_discount = np.array([0.2, 0, 0, 0.000005, 0, 0])
-const_discount = -0.27
-noise_discount = np.random.normal(scale=1.5, size = n)
-z_discount = new_X[W_cols] @ coefs_W_discount + const_discount + noise_discount
-prob_discount = expit(z_discount)
-discount = np.random.binomial(n = 1, p = prob_discount, size = n)
-
-# New Engagement Strategy
-coefs_W_t3 = np.array([0.5, 0.1, -0.2, 0, 0.005, -0.005])
-const_t3 = -0.12
-noise_t3 = np.random.normal(scale=1.0, size = n)
-z_t3 = new_X[W_cols] @ coefs_W_t3 + const_t3 + noise_t3
-prob_t3 = expit(z_t3)
-t3 = np.random.binomial(n = 1, p = prob_t3, size = n)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Mediator
-# MAGIC
-# MAGIC generated from Tech Support
-
-# COMMAND ----------
-
-z_m = tech_support*2-1 + np.random.normal(size=n)
-prob_m = expit(z_m)
-m = np.random.binomial(n = 1, p = prob_m, size = n)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Outcome
-
-# COMMAND ----------
-
-# X features determine heterogeneous treatment effects
-X_cols = ['Global Flag', 'Size']
-theta_coef_tech_support = [500, 0.02]
-theta_const_tech_support = 5000
-te_tech_support = new_X[X_cols] @ theta_coef_tech_support + theta_const_tech_support
-
-theta_coef_discount = [-1000, 0.05]
-theta_const_discount = 0
-te_discount = new_X[X_cols] @ theta_coef_discount + theta_const_discount
-
-theta_coef_t3 = [0, 0]
-theta_const_t3 = 0
-te_t3 = new_X[X_cols] @ theta_coef_t3 + theta_const_t3
-
-y_te = te_tech_support*tech_support + te_discount*discount + te_t3*t3
-
-g_coefs = np.array([2000, 0, 5000, 0.25, 0.0001, 0.0001])
-g_const = 5000
-g_y = new_X[W_cols] @ g_coefs + g_const
-
-y_noise = np.random.normal(scale = 1000, size = n)
-
-mediator_effect = 2000*m
-
-y = pd.Series(y_te + g_y + y_noise + mediator_effect)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Collider
-# MAGIC
-# MAGIC Caused by both outcome and New Engagement Strategy
-
-# COMMAND ----------
-
-z_c = 0.03*y + 1000*t3 - 1400
-prob_c = expit(z_c)
-c = np.random.binomial(n = 1, p = prob_c, size = n)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Consolidate
-
-# COMMAND ----------
-
-new_df = (
-    pd.concat(
-        [
-            new_X,
-            pd.DataFrame(
-                {
-                    'Tech Support': tech_support,
-                    'Discount': discount,
-                    'New Engagement Strategy': t3,
-                    'New Product Adoption': m,
-                    'Planning Summit': c,
-                    'Revenue': y,
-                    'Direct Treatment Effect: Tech Support': te_tech_support,
-                    'Total Treatment Effect: Tech Support': np.round(te_tech_support + (expit(1) - expit(-1))*2000, decimals=2), # incorporate effect from mediator into total effect.
-                    'Direct Treatment Effect: Discount': te_discount,
-                    'Total Treatment Effect: Discount': te_discount,
-                    'Direct Treatment Effect: New Engagement Strategy': te_t3,
-                    'Total Treatment Effect: New Engagement Strategy': te_t3,
-                }
-            )
-        ],
-        axis = 1,
-    )
-    .assign(Revenue = lambda df: df['Revenue'].round(2))
-)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Ground Truth ATE check 
-
-# COMMAND ----------
-
-new_df.filter(like='Treatment Effect').mean(axis=0)
-
-# COMMAND ----------
-
-import networkx as nx
-import dowhy.gcm
-
-ynode = "Revenue"
-mednode = "New Product Adoption"
-collider = "Planning Summit"
-T_cols = ["Tech Support", "Discount", "New Engagement Strategy"]
-trueg = nx.DiGraph()
-trueg.nodes = new_df.loc[:, "Global Flag":"Revenue"].columns
-trueg.add_edges_from([(w, "Revenue") for w in W_cols])
-trueg.add_edges_from([(x, "Revenue") for x in X_cols])  # effect modifiers
-for t in T_cols:
-    trueg.add_edges_from([(w, t) for w in W_cols])
-    if (
-        new_df[f"Direct Treatment Effect: {t}"].mean(axis=0) != 0
-        and new_df[f"Total Treatment Effect: {t}"].mean(axis=0) != 0
-    ):
-        trueg.add_edge(t, ynode)
-trueg.add_edge(T_cols[0], mednode)
-trueg.add_edge(mednode, ynode)  # mediator
-trueg.add_edge(T_cols[2], collider)
-trueg.add_edge(ynode, collider)
-# collider
-
-trueg.add_edge("Size", "IT Spend")
-trueg.add_edge("Employee Count", "PC Count")
-
-
-dowhy.gcm.util.plot(trueg, figure_size=(20, 20))
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC #Causal DAG discovery
 
 # COMMAND ----------
 
 from causallearn.search.ConstraintBased.PC import pc
 
-raw_df = new_df.iloc[:,0:14]
+input_df = ground_truth_df.iloc[:,0:14]
 # default parameters
-cg = pc(np.vstack(raw_df.to_numpy()), node_names=raw_df.columns, alpha=0.01)
+cg = pc(np.vstack(input_df.to_numpy()), node_names=input_df.columns, alpha=0.01)
 
 # visualization using pydot
 cg.draw_pydot_graph()
 
 # COMMAND ----------
 
-# Adding directions to detected relations
-cg.G.add_directed_edge(node1=cg.G.get_node("Size"), node2=cg.G.get_node("IT Spend"))
-cg.G.add_directed_edge(
-    node1=cg.G.get_node("IT Spend"), node2=cg.G.get_node("Tech Support")
-)
-cg.G.add_directed_edge(
-    node1=cg.G.get_node("Tech Support"), node2=cg.G.get_node("New Product Adoption")
+# Adding missing directions
+add_directions(
+    causal_graph=cg,
+    directions=[
+        {"from": "Size", "to": "IT Spend"},
+        {"from": "IT Spend", "to": "Tech Support"},
+        {"from": "Tech Support", "to": "New Product Adoption"},
+    ],
 )
 
 # Correcting directions
-cg.G.remove_connecting_edge(
-    node1=cg.G.get_node("Revenue"), node2=cg.G.get_node("Commercial Flag")
-)
-cg.G.add_directed_edge(
-    node1=cg.G.get_node("Commercial Flag"), node2=cg.G.get_node("Revenue")
-)
-cg.G.remove_connecting_edge(
-    node1=cg.G.get_node("New Engagement Strategy"),
-    node2=cg.G.get_node("Commercial Flag"),
-)
-cg.G.add_directed_edge(
-    node1=cg.G.get_node("Commercial Flag"),
-    node2=cg.G.get_node("New Engagement Strategy"),
+invert_directions(
+    causal_graph=cg,
+    directions=[
+        {"from": "Revenue", "to": "Commercial Flag"},
+        {"from": "New Engagement Strategy", "to": "Commercial Flag"},
+        {"from": "New Engagement Strategy", "to": "Commercial Flag"},
+    ],
 )
 
-# Domain Knowledge derived derected relations
-cg.G.add_directed_edge(
-    node1=cg.G.get_node("Global Flag"), node2=cg.G.get_node("Revenue")
-)
-cg.G.add_directed_edge(
-    node1=cg.G.get_node("Major Flag"), node2=cg.G.get_node("Revenue")
-)
-cg.G.add_directed_edge(
-    node1=cg.G.get_node("Employee Count"), node2=cg.G.get_node("PC Count")
+# Domain Knowledge derived directed relations
+add_directions(
+    causal_graph=cg,
+    directions=[
+        {"from": "Global Flag", "to": "Revenue"},
+        {"from": "Major Flag", "to": "Revenue"},
+        {"from": "Employee Count", "to": "PC Count"},
+    ],
 )
 
-#Add effect from all basic characteristics to incentives
-incentives = ["Discount", "Tech Support", "New Engagement Strategy"]
-account_basic_characteristics = [
-    "Major Flag",
-    "SMC Flag",
-    "Commercial Flag",
-    "IT Spend",
-    "Employee Count",
-    "PC Count",
-]
-for incentive in incentives:
-    for characteristic in account_basic_characteristics:
-        cg.G.add_directed_edge(
-            node1=cg.G.get_node(characteristic), node2=cg.G.get_node(incentive)
-        )
+# Add effect from all basic characteristics to incentives
+add_relations_influencing_incentives(
+    causal_graph=cg,
+    incentives=["Discount", "Tech Support", "New Engagement Strategy"],
+    account_basic_characteristics=[
+        "Major Flag",
+        "SMC Flag",
+        "Commercial Flag",
+        "IT Spend",
+        "Employee Count",
+        "PC Count",
+    ],
+)
+
 
 cg.draw_pydot_graph()
 
 # COMMAND ----------
 
-import pydot
-from causallearn.graph.Edge import Edge
-from causallearn.graph.Edges import Edges
-from causallearn.graph.Endpoint import Endpoint
-from causallearn.graph.Graph import Graph
-from causallearn.graph.Node import Node
-from causallearn.graph.NodeType import NodeType
-
-def to_pydot(G, labels, dpi = 200):
-    nodes = G.get_nodes()
-    if labels is not None:
-        assert len(labels) == len(nodes)
-
-    pydot_g = pydot.Dot("", graph_type="digraph", fontsize=18)
-    pydot_g.obj_dict["attributes"]["dpi"] = dpi
-    nodes = G.get_nodes()
-    for i, node in enumerate(nodes):
-      node_name = labels[i] if labels is not None else node.get_name()
-      pydot_g.add_node(pydot.Node(labels[i], label=node.get_name()))
-      pydot_g.add_node(pydot.Node(labels[i], label=node_name))
-
-    def get_g_arrow_type(endpoint):
-      if endpoint == Endpoint.TAIL:
-          return 'none'
-      elif endpoint == Endpoint.ARROW:
-          return 'normal'
-      elif endpoint == Endpoint.CIRCLE:
-          return 'odot'
-      else:
-          raise NotImplementedError()
-
-    edges = G.get_graph_edges()
-
-    for edge in edges:
-        node1 = edge.get_node1()
-        node2 = edge.get_node2()
-        node1_id = nodes.index(node1)
-        node2_id = nodes.index(node2)
-        dot_edge = pydot.Edge(labels[node1_id], labels[node2_id], dir='both', arrowtail=get_g_arrow_type(edge.get_endpoint1()),
-                              arrowhead=get_g_arrow_type(edge.get_endpoint2()))
-
-        pydot_g.add_edge(dot_edge)
-    return pydot_g
-
-pdot = to_pydot(cg.G, labels=raw_df.columns)
-
-graph = pdot.to_string().replace("\n", " ") 
-
-# COMMAND ----------
-
-# Generic ML imports
-from sklearn.pipeline import make_pipeline, Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression, Lasso
-
-# EconML imports
-from econml.dml import LinearDML
-from econml.cate_interpreter import SingleTreePolicyInterpreter
-
-# transformer that performs standard scaling on non-binary variables
-ct = ColumnTransformer(
-    [
-        (
-            'num_transformer', 
-            StandardScaler(), 
-            lambda df: pd.DataFrame(df).apply(pd.Series.nunique).loc[lambda df: df>2].index.tolist()
-        )
-    ], remainder='passthrough')
-
-model_t = make_pipeline(ct, LogisticRegression(C=13000, max_iter=1000)) # model used to predict treatment
-model_y = make_pipeline(ct, Lasso(alpha=20)) # model used to predict outcome
+# MAGIC %md
+# MAGIC ## Influence Identification and Estimation
 
 # COMMAND ----------
 
 import dowhy
 
-tech_support_effect_model = dowhy.CausalModel(data=raw_df,
+graph = to_pydot(cg.G, labels=input_df.columns) 
+
+tech_support_effect_model = dowhy.CausalModel(data=input_df,
                      graph=graph,
                      treatment="Tech Support", 
                      outcome="Revenue"
@@ -469,15 +134,11 @@ print(tech_support_total_effect_identified_estimand)
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC The following code creates a wrapper function, EstimatorWrapper, that uses the const_marginal_effect method to return the point estimates of the effect given the effect modifiers. We will wrap our effect estimator we get from EconML with this function and log it in MLflow. Later when we make a batch inference, we load this model (estimator) from MLflow and use it for inference.   
+import mlflow
 
-# COMMAND ----------
+mlflow.autolog(disable=True)
 
-# MAGIC %md
-# MAGIC The custom fuction logs an identified estimand, various parameters and models to MLflow.
-
-# COMMAND ----------
+model_t, model_y = setup_treatment_and_out_models()
 
 effect_modifiers = ["Size", "Global Flag"]
 method_name = "backdoor.econml.dml.LinearDML"
@@ -511,6 +172,12 @@ print(tech_support_direct_effect_identified_estimand)
 # COMMAND ----------
 
 
+import mlflow
+
+mlflow.autolog(disable=True)
+
+model_t, model_y = setup_treatment_and_out_models()
+
 effect_modifiers = ["Size", "Global Flag"]
 method_name = "backdoor.econml.dml.LinearDML"
 init_params = {
@@ -533,7 +200,7 @@ tech_support_direct_effect_estimate.interpret()
 
 # COMMAND ----------
 
-discount_effect_model = dowhy.CausalModel(data=raw_df,
+discount_effect_model = dowhy.CausalModel(data=input_df,
                      graph=graph,
                      treatment="Discount", 
                      outcome="Revenue"
@@ -547,6 +214,12 @@ discount_effect_identified_estimand = discount_effect_model.identify_effect(
 print(discount_effect_identified_estimand)
 
 # COMMAND ----------
+
+import mlflow
+
+mlflow.autolog(disable=True)
+
+model_t, model_y = setup_treatment_and_out_models()
 
 effect_modifiers = ["Size", "Global Flag"]
 method_name = "backdoor.econml.dml.LinearDML"
@@ -569,13 +242,12 @@ discount_effect_estimate = discount_effect_model.estimate_effect(
 
 discount_effect_estimate.interpret()
 
-
 # COMMAND ----------
 
 import dowhy
 
 new_strategy_effect_model = dowhy.CausalModel(
-    data=raw_df, 
+    data=input_df, 
     graph=graph, 
     treatment="New Engagement Strategy", 
     outcome="Revenue"
@@ -597,8 +269,6 @@ new_strategy_effect_estimate.value
 
 # COMMAND ----------
 
-import functools
-
 estimates_df = pd.DataFrame(
     {
       "Estimated Direct Treatment Effect: Tech Support":[tech_support_direct_effect_estimate.value],
@@ -607,31 +277,13 @@ estimates_df = pd.DataFrame(
       "Estimated Total Treatment Effect: New Engagement Strategy":[new_strategy_effect_estimate.value],
     }
 )
-ground_truth_df = pd.DataFrame(
-    new_df[
-        [
-            "Direct Treatment Effect: Tech Support",
-            "Total Treatment Effect: Tech Support",
-            "Total Treatment Effect: Discount",
-            "Total Treatment Effect: New Engagement Strategy",
-        ]
-    ].mean()
-).T
 
-comparison_df = pd.concat([ground_truth_df, estimates_df], axis=1)
+compare_estimations_vs_ground_truth(ground_truth_df, estimates_df)
 
-comparison_df[
-    functools.reduce(
-        lambda acc, x: acc + [x[0], x[1]],
-        [
-            [ground_truth, estimate]
-            for ground_truth, estimate in zip(
-                ground_truth_df.columns, estimates_df.columns
-            )
-        ],
-    )
-]
+# COMMAND ----------
 
+# MAGIC %md
+# MAGIC ##Refutation
 
 # COMMAND ----------
 
@@ -789,14 +441,10 @@ refutation_df
 
 # COMMAND ----------
 
-# MAGIC %md Here we are loading our estimators from MLflow using ```mlflow.pyfunc.load_model``` method. 
-
-# COMMAND ----------
-
 import mlflow
 
-
 class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
+  
     def __init__(self, models_dictionary, effect_modifiers):
         self.models_dictionary = models_dictionary
         self.effect_modifiers = effect_modifiers
@@ -823,8 +471,8 @@ class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
         t2_cost = np.ones((data.shape[0], 1)) * 7000
         return np.hstack([t1_cost, t2_cost, t1_cost + t2_cost])
 
-    def _estimate_net_effects(self, estimated_effects, model_input):
-        return estimated_effects - self._cost_fn_interaction(model_input)
+    def _estimate_net_effects(self, estimated_effects, costs):
+        return estimated_effects - costs
 
     def _get_recommended_incentive(self, net_effects):
         net_effects["recommended incentive"]= net_effects.idxmax(axis=1).apply(
@@ -836,7 +484,8 @@ class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
     def predict(self, context, model_input):
         estimated_effects = self._estimate_isolated_effect(model_input)
         estimated_effects = self._estimate_interaction_effect(estimated_effects)
-        net_effects = self._estimate_net_effects(estimated_effects, model_input)
+        costs = self._cost_fn_interaction(model_input)
+        net_effects = self._estimate_net_effects(estimated_effects, costs)
         net_effects["no incentive net effect"] = 0
         net_effects = self._get_recommended_incentive(net_effects) 
         return model_input.join(net_effects)
@@ -857,7 +506,7 @@ with mlflow.start_run(run_name=f"{model_name}_run") as experiment_run:
     mlflow.pyfunc.log_model(
         artifact_path="model",
         python_model=personalizedIncentiveRecommender,
-        signature=infer_signature(raw_df, personalizedIncentiveRecommender.predict({},raw_df))
+        signature=infer_signature(input_df, personalizedIncentiveRecommender.predict({},input_df))
     )
 
 model_details = mlflow.register_model(
@@ -865,34 +514,26 @@ model_details = mlflow.register_model(
     name=model_name,
 )
 
-displayHTML(f"<h2>model name: '{model_details.name}'</h2>")
-displayHTML(f"<h2>model version: {model_details.version}</h2>")
+displayHTML(f"<h1>Model '{model_details.name}' registered</h1>")
+displayHTML(f"<h2>-Version {model_details.version}</h2>")
 
 # COMMAND ----------
 
-loaded_model = mlflow.pyfunc.load_model(f"models:/{model_details.name}/{model_details.version}" )
+# MAGIC %md Here we are loading our estimators from MLflow using ```mlflow.pyfunc.load_model``` method. 
 
-final_df = loaded_model.predict(raw_df)
+# COMMAND ----------
+
+loaded_model = mlflow.pyfunc.load_model(
+    f"models:/{model_details.name}/{model_details.version}"
+)
+
+final_df = loaded_model.predict(input_df)
 
 display(final_df)
 
 # COMMAND ----------
 
-everage_effect_recommended_incentive_df = pd.DataFrame(final_df[
-            [
-                "tech support net effect",
-                "discount net effect",
-                "tech support and discount net effect",
-                "no incentive net effect",
-                "recommended incentive net effect",
-            ]
-        ].mean()
-).T
-
-everage_effect_recommended_incentive_df.columns = ["if always 'tech support' incentive", "if always 'discount' incentive", "when always 'tech support and discount' incentive", "if no incentive", "with recommended incentive"]
-everage_effect_recommended_incentive_df = everage_effect_recommended_incentive_df.T
-everage_effect_recommended_incentive_df.columns = ["Average net return per account in dollars"]
-everage_effect_recommended_incentive_df
+compare_returns_from_policies(final_df)
 
 # COMMAND ----------
 
