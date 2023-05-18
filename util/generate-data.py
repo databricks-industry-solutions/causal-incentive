@@ -1,5 +1,5 @@
 # Databricks notebook source
-#%run ./notebook-config
+# MAGIC %run ./notebook-config
 
 # COMMAND ----------
 
@@ -10,6 +10,8 @@ import pandas as pd
 import pickle as pkl
 import os
 from scipy.special import expit, logit
+
+%matplotlib inline
 
 # COMMAND ----------
 
@@ -239,4 +241,4 @@ if display_results:
 
 # COMMAND ----------
 
-
+input_df = ground_truth_df.iloc[:,0:14]
