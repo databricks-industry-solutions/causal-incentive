@@ -1,20 +1,4 @@
 # Databricks notebook source
-# MAGIC %sh sudo apt-get -qq update
-
-# COMMAND ----------
-
-# MAGIC %sh sudo apt-get -y -qq install graphviz libgraphviz-dev 
-
-# COMMAND ----------
-
-# MAGIC %pip install pygraphviz==1.10 networkx==2.8.8  dowhy==0.9.1 causal-learn==0.1.3 econml==0.14.0 --quiet
-
-# COMMAND ----------
-
-dbutils.library.restartPython()
-
-# COMMAND ----------
-
 # MAGIC %matplotlib inline
 
 # COMMAND ----------
