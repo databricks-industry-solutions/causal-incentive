@@ -62,8 +62,6 @@ tech_support_total_effect_estimate.interpret()
 
 import mlflow
 
-mlflow.set_experiment(experiment_name=get_experiment_name())
-
 model_details = register_dowhy_model(
   model_name = "tech_support_total_effect_dowhy_model",
   model=tech_support_effect_model,

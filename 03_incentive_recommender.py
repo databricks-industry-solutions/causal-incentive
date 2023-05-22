@@ -80,8 +80,6 @@ class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
 
 from mlflow.models.signature import infer_signature
 
-mlflow.set_experiment(experiment_name=get_experiment_name())
-
 model_name = "personalized_policy_recommender"
 
 with mlflow.start_run(run_name=f"{model_name}_run") as experiment_run:
