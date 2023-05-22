@@ -139,9 +139,9 @@ refutation_subset_df
 
 refutation_df = pd.concat([
         refutation_random_common_cause_df,
-        refutation_unobserved_common_cause_df,
+        #refutation_unobserved_common_cause_df,
         refutation_subset_df,
         refutation_placebo_df,
-        refutation_dummy_outcome_df,
+        #refutation_dummy_outcome_df,
     ])
 refutation_df
