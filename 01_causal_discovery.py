@@ -104,10 +104,10 @@ with mlflow.start_run(run_name="casual_discovery") as run:
   })
 
   graph = to_pydot(cg.G, labels=input_df.columns)
-  with open("graph.txt", "w") as f:
+  with open("/databricks/driver/graph.txt", "w") as f:
     f.write(graph)
 
-  mlflow.log_artifact("graph.txt", artifact_path="graph") 
+  mlflow.log_artifact("/databricks/driver/graph.txt", artifact_path="graph") 
 
 # COMMAND ----------
 
