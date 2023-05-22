@@ -73,6 +73,16 @@ job_json = {
                       "pypi": {
                           "package": "causal-learn==0.1.3" 
                       }
+                  },
+                  {
+                      "pypi": {
+                          "package": "dowhy==0.9.1" 
+                      }
+                  },
+                  {
+                      "pypi": {
+                          "package": "econml==0.14.0" 
+                      }
                   }
               ]
             },
@@ -88,6 +98,21 @@ job_json = {
                     }
                 ],
                 "libraries": [
+                  {
+                      "pypi": {
+                          "package": "pygraphviz==1.10" 
+                      }
+                  },
+                  {
+                      "pypi": {
+                          "package": "networkx==2.8.8" 
+                      }
+                  },
+                  {
+                      "pypi": {
+                          "package": "causal-learn==0.1.3" 
+                      }
+                  },
                   {
                       "pypi": {
                           "package": "dowhy==0.9.1" 
@@ -112,6 +137,21 @@ job_json = {
                     }
                 ],
                 "libraries": [
+                  {
+                      "pypi": {
+                          "package": "pygraphviz==1.10" 
+                      }
+                  },
+                  {
+                      "pypi": {
+                          "package": "networkx==2.8.8" 
+                      }
+                  },
+                  {
+                      "pypi": {
+                          "package": "causal-learn==0.1.3" 
+                      }
+                  },
                   {
                       "pypi": {
                           "package": "dowhy==0.9.1" 
@@ -144,6 +184,11 @@ job_json = {
                   {
                       "pypi": {
                           "package": "networkx==2.8.8" 
+                      }
+                  },
+                  {
+                      "pypi": {
+                          "package": "causal-learn==0.1.3" 
                       }
                   },
                   {
