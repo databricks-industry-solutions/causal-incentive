@@ -229,8 +229,19 @@ job_json = {
 
 # COMMAND ----------
 
-# DBTITLE 1,Move init file into a DBFS location
-!cp ./util/causal_init.sh /dbfs/databricks/scripts/causal_init.sh
+# DBTITLE 1,Write init file into a DBFS location
+# make folder to house init script
+dbutils.fs.mkdirs('dbfs:/databricks/scripts')
+
+# write init script
+dbutils.fs.put(
+  '/databricks/scripts/causal_init.sh',
+  '''
+#!/bin/bash
+sudo apt-get -qq update
+sudo apt-get -y -qq install graphviz libgraphviz-dev''', True
+)
+
 
 # COMMAND ----------
 
