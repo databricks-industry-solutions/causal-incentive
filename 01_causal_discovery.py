@@ -91,6 +91,12 @@ cg.draw_pydot_graph()
 
 import mlflow
 
+# COMMAND ----------
+
+import mlflow
+
+mlflow.set_experiment(experiment_name=get_experiment_name())
+
 with mlflow.start_run(run_name="casual_discovery") as run:
   mlflow.log_params({
     **{

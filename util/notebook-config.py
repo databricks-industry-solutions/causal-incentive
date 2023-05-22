@@ -263,3 +263,19 @@ def compare_estimations_vs_ground_truth(original_df, estimates_df):
           ],
       )
   ]
+
+# COMMAND ----------
+
+import os
+
+def get_experiment_name():
+  return (
+      os.path.splitext(
+          dbutils.notebook.entry_point.getDbutils()
+          .notebook()
+          .getContext()
+          .notebookPath()
+          .get()
+      )[0]
+      + "_exp"
+  )
