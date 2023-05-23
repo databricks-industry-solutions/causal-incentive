@@ -60,6 +60,8 @@ tech_support_total_effect_estimate.interpret()
 
 # COMMAND ----------
 
+import mlflow
+
 model_details = register_dowhy_model(
   model_name = "tech_support_total_effect_dowhy_model",
   model=tech_support_effect_model,

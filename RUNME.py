@@ -43,19 +43,19 @@ job_json = {
             {
                 "job_cluster_key": "causal_cluster",
                 "notebook_task": {
-                    "notebook_path": f"00_Intro"
+                    "notebook_path": f"00_intro"
                 },
-                "task_key": "00_Intro"
+                "task_key": "00_intro"
             },
             {
                 "job_cluster_key": "causal_cluster",
                 "notebook_task": {
-                    "notebook_path": f"01_Causal_Discovery"
+                    "notebook_path": f"01_causal_discovery"
                 },
-                "task_key": "01_Causal_Discovery",
+                "task_key": "01_causal_discovery",
                 "depends_on": [
                     {
-                        "task_key": "00_Intro"
+                        "task_key": "00_intro"
                     }
                 ],
                 "libraries": [
@@ -71,12 +71,12 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "causal-learn==0.1.3" 
                       }
                   },
                   {
                       "pypi": {
-                          "package": "causal-learn==0.1.3" 
+                          "package": "dowhy==0.9.1" 
                       }
                   },
                   {
@@ -94,7 +94,7 @@ job_json = {
                 "task_key": "02_identification_estimation",
                 "depends_on": [
                     {
-                        "task_key": "01_Causal_Discovery"
+                        "task_key": "01_causal_discovery"
                     }
                 ],
                 "libraries": [
@@ -110,12 +110,12 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "causal-learn==0.1.3" 
                       }
                   },
                   {
                       "pypi": {
-                          "package": "causal-learn==0.1.3" 
+                          "package": "dowhy==0.9.1" 
                       }
                   },
                   {
@@ -128,9 +128,9 @@ job_json = {
             {
                 "job_cluster_key": "causal_cluster",
                 "notebook_task": {
-                    "notebook_path": f"03_policy_recommender"
+                    "notebook_path": f"03_incentive_recommender"
                 },
-                "task_key": "03_policy_recommender",
+                "task_key": "03_incentive_recommender",
                 "depends_on": [
                     {
                         "task_key": "02_identification_estimation"
@@ -149,12 +149,12 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "causal-learn==0.1.3" 
                       }
                   },
                   {
                       "pypi": {
-                          "package": "causal-learn==0.1.3" 
+                          "package": "dowhy==0.9.1" 
                       }
                   },
                   {
@@ -167,12 +167,12 @@ job_json = {
             {
                 "job_cluster_key": "causal_cluster",
                 "notebook_task": {
-                    "notebook_path": f"04_refute"
+                    "notebook_path": f"04_refutation"
                 },
                 "task_key": "04_refute",
                 "depends_on": [
                     {
-                        "task_key": "03_policy_recommender"
+                        "task_key": "03_incentive_recommender"
                     }
                 ],
                 "libraries": [
@@ -188,12 +188,12 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "causal-learn==0.1.3" 
                       }
                   },
                   {
                       "pypi": {
-                          "package": "causal-learn==0.1.3" 
+                          "package": "dowhy==0.9.1" 
                       }
                   },
                   {
@@ -229,8 +229,19 @@ job_json = {
 
 # COMMAND ----------
 
-# DBTITLE 1,Move init file into a DBFS location
-!cp ./util/causal_init.sh /dbfs/databricks/scripts/causal_init.sh
+# DBTITLE 1,Write init file into a DBFS location
+# make folder to house init script
+dbutils.fs.mkdirs('dbfs:/databricks/scripts')
+
+# write init script
+dbutils.fs.put(
+  '/databricks/scripts/causal_init.sh',
+  '''
+#!/bin/bash
+sudo apt-get -qq update
+sudo apt-get -y -qq install graphviz libgraphviz-dev''', True
+)
+
 
 # COMMAND ----------
 
