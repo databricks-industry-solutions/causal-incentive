@@ -4,26 +4,9 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Make Policy Recommendations
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC In this section, we use EconML tools to visualize differences in conditional average treatment effects across customers and select an optimal investment plan for each customer.
+# MAGIC #### Individualized Incetive Recommendations
 # MAGIC
-# MAGIC In order to decide whether to offer each investment to the customer, we need to know the cost of providing the incentive as well as the benefits of doing so. In this step we define a cost function to specify how expensive it would be to provide each kind of incentive to each customer. In other data samples you can define these costs as a function of customer features, upload a matrix of costs, or set constant costs for each treatment (the default is zero). In this example, we set the cost of ```discount``` to be a fix value of $7000 per account, while the cost of ```tech support``` is $100 per PC.
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC #### Individualized policy recommendations 
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC For our current sample of customers, we can also identify the best treatment plan for each individual customer based on their CATE. We use the model's `const_marginal_effect` method to find the counterfactual treatment effect for each possible treatment. We then subtract the treatment cost and choose the treatment with the highest return. That is the recommended policy.
-# MAGIC
-# MAGIC To visualize this output, we plot each customer based on their PC count and past revenue, the most important determinants of treatment according to the tree interpreter, and color code them based on recommended treatment.
+# MAGIC Armed with the model trained in the previous step,  we can develop a composite model that estimated the effects of each incentive new companies based on their especific characteristics.  The model will select the incentive or combination of incentives with the highest effect on ```Revenue``` after accounting for the cost of the incentive. 
 
 # COMMAND ----------
 
@@ -78,6 +61,11 @@ class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ###Registering in MLflow the Personalized Incentive Recommder model
+
+# COMMAND ----------
+
 from mlflow.models.signature import infer_signature
 
 model_name = "personalized_policy_recommender"
@@ -113,7 +101,17 @@ displayHTML(f"<h2>-Version {model_details.version}</h2>")
 
 # COMMAND ----------
 
-# MAGIC %md Here we are loading our estimators from MLflow using ```mlflow.pyfunc.load_model``` method. 
+# MAGIC %md
+# MAGIC ###Loading model and Predicting the best incentive(s) per account
+# MAGIC
+# MAGIC We can see new columns are added to the DataFrame with the information estimated by the model:
+# MAGIC
+# MAGIC - ```recommended incentive```: incentive or combination of incentives that would result in the optimal return
+# MAGIC - ```recommended incentive net effect```:  Dollar effect on "revenue" of the recommended incentive(s) after substracting cost 
+# MAGIC - ```discount net effect```: Dollar effect on ```Revenue``` of the ```Discount``` incentive
+# MAGIC - ```tech support net effect```: Dollar effect on ```Revenue``` of the ```tech support``` incentive
+# MAGIC - ```tech support + discount net effect```: Dollar effect on ```Revenue``` of providing both incentives
+# MAGIC - ```no incentive net effect```: Dollar effect on ```Revenue``` of providing no incentive 
 
 # COMMAND ----------
 
@@ -124,6 +122,13 @@ loaded_model = mlflow.pyfunc.load_model(
 final_df = loaded_model.predict(input_df)
 
 display(final_df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ###Comparing Policies
+# MAGIC
+# MAGIC We can see in the comparison how following the Personalized Recommender approach a average gain of ~5K per account is obtained
 
 # COMMAND ----------
 
