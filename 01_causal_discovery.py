@@ -6,7 +6,7 @@
 # MAGIC %md
 # MAGIC #Discovering the network of influences among the Features
 # MAGIC
-# MAGIC In order to isolate the influence we plan to estimate,  we need first to understand the relations among the available features.  We will use [PC algorithm](https://www.youtube.com/watch?v=o2A61bJ0UCw) implemented in  package in [PyWhy](https://www.pywhy.org/) package called [CausalLearn](https://github.com/py-why/causal-learn), to discover the basic skeleton of the network.  
+# MAGIC In order to isolate the influence we plan to estimate,  we need first to understand the relations among the available features.  We will use [PC algorithm](https://www.youtube.com/watch?v=o2A61bJ0UCw) implemented in the [PyWhy](https://www.pywhy.org/) package called [CausalLearn](https://github.com/py-why/causal-learn), to discover the basic skeleton of the network.  
 
 # COMMAND ----------
 
@@ -43,7 +43,7 @@ cg.draw_pydot_graph()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC The skeleton lacks directions in some of the relations.  Some of the missing directions are obivious:
+# MAGIC The skeleton lacks directions in some of the relations.  Some of the missing directions are obvious:
 # MAGIC
 # MAGIC - ```Size``` -> ```IT Spend```   
 # MAGIC - ```IT Spend``` -> ```Tech Support```
@@ -51,7 +51,7 @@ cg.draw_pydot_graph()
 # MAGIC - ```Major Flag``` -> ```New Engagment Strategy```
 # MAGIC - ```Employee count``` -> ```PC Count```
 # MAGIC
-# MAGIC We will add this direction to the network:
+# MAGIC We will add these directions to the network:
 
 # COMMAND ----------
 
@@ -139,7 +139,7 @@ cg.draw_pydot_graph()
 # MAGIC %md
 # MAGIC The network defined above,  also known as the Casual Graph, will guide the <b>identification</b> and <b>estimation</b> phases.  We will proceed to store it as an artifact in an MLFlow experiment run to then use it in the next step (the ```02_identification_estimation``` notebook).  
 # MAGIC
-# MAGIC Please notice we are also storing in the MLFLow the algotirhm used for the discovery, the parameters applied to the algorithm,  and all the alteretions made to the discovered graph skeleton.
+# MAGIC Please notice we are also storing in the [MLfLow](https://databricks.atlassian.net/wiki/spaces/UN/pages/2893873880/Brickstore) the algorithm used for the discovery, the parameters applied to the algorithm,  and all the alterations made to the discovered graph skeleton.
 
 # COMMAND ----------
 

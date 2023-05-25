@@ -4,7 +4,7 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Individualized Incetive Recommendations
+# MAGIC #### Individualized Incentive Recommendations
 # MAGIC
 # MAGIC Armed with the model trained in the previous step,  we can develop a composite model that estimated the effects of each incentive new companies based on their especific characteristics.  The model will select the incentive or combination of incentives with the highest effect on ```Revenue``` after accounting for the cost of the incentive. 
 
@@ -128,7 +128,7 @@ display(final_df)
 # MAGIC %md
 # MAGIC ###Comparing Policies
 # MAGIC
-# MAGIC We can see in the comparison how following the Personalized Recommender approach a average gain of ~5K per account is obtained
+# MAGIC We can see in the comparison how following the personalized recommender approach an average gain of ~5K per account is obtained
 
 # COMMAND ----------
 

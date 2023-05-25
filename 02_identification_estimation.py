@@ -9,7 +9,7 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We will use the Casual Graph obtained from the previous step to guide the identification step.  In this step the best method to isolate the effect of a given incentive on ```Revenue``` is identified.  The Package DoWhy automates this step by relaying on the well stablished [Do-Calculus](https://ftp.cs.ucla.edu/pub/stat_ser/r402.pdf) theoretical framework
+# MAGIC We will use the casual graph obtained from the previous step to guide the identification step.  In this step the best method to isolate the effect of a given incentive on ```Revenue``` is identified.  The package DoWhy automates this step by relaying on the well established [Do-Calculus](https://ftp.cs.ucla.edu/pub/stat_ser/r402.pdf) theoretical framework
 # MAGIC
 # MAGIC First, lets load the graph from [MLflow](https://www.databricks.com/product/managed-mlflow)
 
@@ -167,7 +167,7 @@ model_details = register_dowhy_model(
 # MAGIC %md
 # MAGIC ###Estimating effect of "Discount" in "Revenue"
 # MAGIC
-# MAGIC We will follow a similar approach as the one use to identify and estimate the total effect of ```Tech Support``` to now identify and estimate the effect of ```Decisount``` on ```Revenue```
+# MAGIC We will follow a similar approach as the one use to identify and estimate the total effect of ```Tech Support``` to now identify and estimate the effect of ```Discount``` on ```Revenue```
 
 # COMMAND ----------
 
@@ -263,14 +263,14 @@ new_strategy_effect_estimate.value
 # MAGIC %md
 # MAGIC [DoWhy](https://github.com/py-why/dowhy) also find now effect.
 # MAGIC
-# MAGIC Please notice [DoWhy](https://github.com/py-why/dowhy) decide not to use ```Plan Summit``` as a featue for the estimation.  If included, a spurious effect would be percived misleading us to wrong conclusions
+# MAGIC Please notice [DoWhy](https://github.com/py-why/dowhy) decide not to use ```Plan Summit``` as a feature for the estimation.  If included, a spurious effect would be percived, leading us to wrong conclusions
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ###Comparing estimated effects with ground thruth
 # MAGIC
-# MAGIC As mentioned before the data for this accelerator was generated using probabilistic methods.  The ground truth is provided in the original dataset.  When compare with the estimated effect we see the estimation are very close
+# MAGIC As mentioned before the data for this accelerator was generated using probabilistic methods.  The ground truth is provided in the original dataset.  When compared with the estimated effect we see the estimations are very close
 
 # COMMAND ----------
 
