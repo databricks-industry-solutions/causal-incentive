@@ -8,7 +8,6 @@
 
 # COMMAND ----------
 
-
 wrapped_model = get_registered_wrapped_model(model_name="discount_dowhy_model")
 
 model = wrapped_model.get_model()
@@ -16,7 +15,6 @@ estimand = wrapped_model.get_estimand()
 estimate = wrapped_model.get_estimate()
 
 # COMMAND ----------
-
 
 res_random_common_cause = model.refute_estimate(
     estimand=estimand,
@@ -27,19 +25,23 @@ res_random_common_cause = model.refute_estimate(
     n_jobs=16,
 )
 
-refutation_random_common_cause_df = pd.DataFrame([{
-        "Refutation Type": res_random_common_cause.refutation_type,
-        "Estimated Effect": res_random_common_cause.estimated_effect,
-        "New Effect": res_random_common_cause.new_effect,
-        "Refutation Result (p value)": res_random_common_cause.refutation_result["p_value"] 
-    }])
+refutation_random_common_cause_df = pd.DataFrame(
+    [
+        {
+            "Refutation Type": res_random_common_cause.refutation_type,
+            "Estimated Effect": res_random_common_cause.estimated_effect,
+            "New Effect": res_random_common_cause.new_effect,
+            "Refutation Result (p value)": res_random_common_cause.refutation_result[
+                "p_value"
+            ],
+        }
+    ]
+)
 
-refutation_random_common_cause_df  
+refutation_random_common_cause_df
 
 # COMMAND ----------
 
-import mlflow
- 
 mlflow.autolog(disable=True)
 
 res_unobserved_common_cause = model.refute_estimate(
@@ -53,14 +55,18 @@ res_unobserved_common_cause = model.refute_estimate(
     effect_fraction_on_outcome=0.05,
 )
 
-refutation_unobserved_common_cause_df = pd.DataFrame([{
-        "Refutation Type": res_unobserved_common_cause.refutation_type,
-        "Estimated Effect": res_unobserved_common_cause.estimated_effect,
-        "New Effect": res_unobserved_common_cause.new_effect,
-        "Refutation Result (p value)": None 
-    }])
+refutation_unobserved_common_cause_df = pd.DataFrame(
+    [
+        {
+            "Refutation Type": res_unobserved_common_cause.refutation_type,
+            "Estimated Effect": res_unobserved_common_cause.estimated_effect,
+            "New Effect": res_unobserved_common_cause.new_effect,
+            "Refutation Result (p value)": None,
+        }
+    ]
+)
 
-refutation_unobserved_common_cause_df  
+refutation_unobserved_common_cause_df
 
 # COMMAND ----------
 
@@ -74,14 +80,18 @@ res_placebo = model.refute_estimate(
     n_jobs=16,
 )
 
-refutation_placebo_df = pd.DataFrame([{
-        "Refutation Type": res_placebo.refutation_type,
-        "Estimated Effect": res_placebo.estimated_effect,
-        "New Effect": res_placebo.new_effect,
-        "Refutation Result (p value)": res_placebo.refutation_result["p_value"] 
-    }])
+refutation_placebo_df = pd.DataFrame(
+    [
+        {
+            "Refutation Type": res_placebo.refutation_type,
+            "Estimated Effect": res_placebo.estimated_effect,
+            "New Effect": res_placebo.new_effect,
+            "Refutation Result (p value)": res_placebo.refutation_result["p_value"],
+        }
+    ]
+)
 
-refutation_placebo_df  
+refutation_placebo_df
 
 # COMMAND ----------
 
@@ -95,18 +105,21 @@ res_subset = model.refute_estimate(
     n_jobs=16,
 )
 
-refutation_subset_df = pd.DataFrame([{
-        "Refutation Type": res_subset.refutation_type,
-        "Estimated Effect": res_subset.estimated_effect,
-        "New Effect": res_subset.new_effect,
-        "Refutation Result (p value)": res_subset.refutation_result["p_value"] 
-    }])
+refutation_subset_df = pd.DataFrame(
+    [
+        {
+            "Refutation Type": res_subset.refutation_type,
+            "Estimated Effect": res_subset.estimated_effect,
+            "New Effect": res_subset.new_effect,
+            "Refutation Result (p value)": res_subset.refutation_result["p_value"],
+        }
+    ]
+)
 
-refutation_subset_df  
+refutation_subset_df
 
 # COMMAND ----------
 
-import mlflow
 mlflow.autolog(disable=True)
 
 coefficients = np.array([10, 0.02])
@@ -126,22 +139,30 @@ res_dummy_outcome = model.refute_estimate(
     outcome_function=linear_gen,
 )[0]
 
-refutation_dummy_outcome_df = pd.DataFrame([{
-        "Refutation Type": res_dummy_outcome.refutation_type,
-        "Estimated Effect": res_dummy_outcome.estimated_effect,
-        "New Effect": res_dummy_outcome.new_effect,
-        "Refutation Result (p value)": res_dummy_outcome.refutation_result["p_value"] 
-    }])
+refutation_dummy_outcome_df = pd.DataFrame(
+    [
+        {
+            "Refutation Type": res_dummy_outcome.refutation_type,
+            "Estimated Effect": res_dummy_outcome.estimated_effect,
+            "New Effect": res_dummy_outcome.new_effect,
+            "Refutation Result (p value)": res_dummy_outcome.refutation_result[
+                "p_value"
+            ],
+        }
+    ]
+)
 
-refutation_dummy_outcome_df  
+refutation_dummy_outcome_df
 
 # COMMAND ----------
 
-refutation_df = pd.concat([
+refutation_df = pd.concat(
+    [
         refutation_random_common_cause_df,
         refutation_unobserved_common_cause_df,
         refutation_subset_df,
         refutation_placebo_df,
         refutation_dummy_outcome_df,
-    ])
+    ]
+)
 refutation_df
