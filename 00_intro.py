@@ -105,7 +105,3 @@
 # MAGIC [04_refutation]()
 # MAGIC
 # MAGIC Important:  Please execute the “RUNME” notebook to prepare your Databricks environment for the notebooks mentioned above.  The “RUNME” notebook will create a new Databricks Workflow pointing to each of the notebook,  create a new job cluster to execute the workflow, and  Install all the dependency libraries.
-
-# COMMAND ----------
-
-

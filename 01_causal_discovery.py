@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %run ./util/generate-data
+# MAGIC %run ./util/notebook-config
 
 # COMMAND ----------
 
