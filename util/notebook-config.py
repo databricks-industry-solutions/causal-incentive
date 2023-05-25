@@ -1,5 +1,10 @@
 # Databricks notebook source
-# MAGIC %matplotlib inline
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+
+%matplotlib inline
 
 # COMMAND ----------
 
@@ -270,3 +275,9 @@ def compare_estimations_vs_ground_truth(original_df, estimates_df):
           ],
       )
   ]
+
+# COMMAND ----------
+
+ground_truth_path = "s3://db-gtm-industry-solutions/data/rcg/causal_incentive/ground_truth.parquet"
+ground_truth_df = spark.read.parquet(ground_truth_path).toPandas()
+input_df = ground_truth_df.iloc[:,0:14]
