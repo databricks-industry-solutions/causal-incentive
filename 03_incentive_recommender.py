@@ -10,10 +10,7 @@
 
 # COMMAND ----------
 
-import mlflow
-
 class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
-  
     def __init__(self, models_dictionary, effect_modifiers):
         self.models_dictionary = models_dictionary
         self.effect_modifiers = effect_modifiers
@@ -44,10 +41,10 @@ class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
         return estimated_effects - costs
 
     def _get_recommended_incentive(self, net_effects):
-        net_effects["recommended incentive"]= net_effects.idxmax(axis=1).apply(
-          lambda x: x.replace(" net effect", "")
-          )
-        net_effects["recommended incentive net effect"] = net_effects.max(axis=1)  
+        net_effects["recommended incentive"] = net_effects.idxmax(axis=1).apply(
+            lambda x: x.replace(" net effect", "")
+        )
+        net_effects["recommended incentive net effect"] = net_effects.max(axis=1)
         return net_effects
 
     def predict(self, context, model_input):
@@ -56,7 +53,7 @@ class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
         costs = self._cost_fn_interaction(model_input)
         net_effects = self._estimate_net_effects(estimated_effects, costs)
         net_effects["no incentive net effect"] = 0
-        net_effects = self._get_recommended_incentive(net_effects) 
+        net_effects = self._get_recommended_incentive(net_effects)
         return model_input.join(net_effects)
 
 # COMMAND ----------
