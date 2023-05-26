@@ -15,7 +15,7 @@
 
 # COMMAND ----------
 
-graph = mlflow.artifacts.load_text("/databricks/driver/graph.txt")
+graph = load_graph_from_latest_mlflow_run(experiment_name)
 
 # COMMAND ----------
 

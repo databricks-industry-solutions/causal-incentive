@@ -142,12 +142,12 @@ cg.draw_pydot_graph()
 
 # COMMAND ----------
 
-with mlflow.start_run(run_name="casual_discovery") as run:
+with mlflow.start_run(run_name="causal_discovery") as run:
     mlflow.log_params(
         {
             **{
                 "algorithm": "PC",
-                "library": f"casual-learn=={get_version('causal-learn')}",
+                "library": f"causal-learn=={get_version('causal-learn')}",
             },
             **parameters,
             **{
