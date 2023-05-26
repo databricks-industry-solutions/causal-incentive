@@ -15,24 +15,7 @@
 
 # COMMAND ----------
 
-# Find all the runs from the prior notebook for causal discovery
-client = mlflow.MlflowClient()
-experiment = mlflow.get_experiment_by_name(experiment_name)
-discovery_runs = client.search_runs(
-    experiment_ids=[experiment.experiment_id], 
-    filter_string="attributes.run_name='casual_discovery'",
-    order_by=["start_time DESC"],
-    max_results=1)
-
-# Make sure there is at least one run available
-assert len(discovery_runs) == 1, "please run the notebook 01_causal_discovery at least once"
-
-# The only result should be the latest based on our search_runs call
-latest_discovery_run = discovery_runs[0]
-latest_discovery_run.info.artifact_uri
-
-# Load the graph artifact from the run
-graph = mlflow.artifacts.load_text(latest_discovery_run.info.artifact_uri + "/graph/graph.txt")
+graph = load_graph_from_latest_mlflow_run()
 
 # COMMAND ----------
 
