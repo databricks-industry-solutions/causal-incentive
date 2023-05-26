@@ -15,7 +15,7 @@
 
 # COMMAND ----------
 
-graph = load_graph_from_latest_mlflow_run()
+graph = load_graph_from_latest_mlflow_run(experiment_name)
 
 # COMMAND ----------
 

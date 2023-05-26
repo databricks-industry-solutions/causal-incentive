@@ -245,7 +245,7 @@ def get_registered_wrapped_model_estimator(model_name):
     return wrapped_model.get_estimate()._estimator_object
 
 
-def load_graph_from_latest_mlflow_run():
+def load_graph_from_latest_mlflow_run(experiment_name):
     """Load the causal graph from the most recent MLflow causal run."""
 
     # Find all the runs from the prior notebook for causal discovery
@@ -253,7 +253,7 @@ def load_graph_from_latest_mlflow_run():
     experiment = mlflow.get_experiment_by_name(experiment_name)
     discovery_runs = client.search_runs(
         experiment_ids=[experiment.experiment_id], 
-        filter_string="attributes.run_name='casual_discovery'",
+        filter_string="attributes.run_name='causal_discovery'",
         order_by=["start_time DESC"],
         max_results=1)
 
