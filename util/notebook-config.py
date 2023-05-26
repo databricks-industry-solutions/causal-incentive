@@ -312,7 +312,8 @@ def compare_estimations_vs_ground_truth(original_df, estimates_df):
 
 # For running from a job, the experiment needs to be created in a workspace object.
 username = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
-mlflow.set_experiment("/Users/{}/esg-scoring".format(username))
+experiment_name = "/Users/{}/esg-scoring".format(username)
+mlflow.set_experiment(experiment_name)
 
 
 # Load the data file from a parquet file as a pandas dataframe for use throughout.
