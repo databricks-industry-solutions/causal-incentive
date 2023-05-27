@@ -13,11 +13,11 @@
 import causallearn
 from causallearn.search.ConstraintBased.PC import pc
 
-# parameters
+# Parameters
 parameters = {"node_names": input_df.columns, "alpha": 0.01, "indep_test": "fisherz"}
 cg = pc(data=np.vstack(input_df.to_numpy()), **parameters)
 
-# visualization using pydot
+# Visualization using pydot
 cg.draw_pydot_graph()
 
 # COMMAND ----------
@@ -25,9 +25,9 @@ cg.draw_pydot_graph()
 # MAGIC %md
 # MAGIC The bare bones skeleton discovered offers some interesting insights:
 # MAGIC
-# MAGIC - ```Discount``` seems to have a direct impact in ```Revenue```
-# MAGIC - ```Tech Support``` appears to have a direct impact in ```Revenue``` and a mediated one through ```New Product Adoption``
-# MAGIC - The ```New Engagement Strategy``` seems not influence ```Revenue```.
+# MAGIC - ```Discount``` seems to have a direct impact in ```Revenue```.
+# MAGIC - ```Tech Support``` appears to have a direct impact in ```Revenue``` and a mediated one through ```New Product Adoption```.
+# MAGIC - The ```New Engagement Strategy``` seems not to influence ```Revenue```.
 # MAGIC - Both ```Revenue``` and ```New Engagement Strategy``` influence ```Planning Summit```. This representas a [collider pattern](https://en.wikipedia.org/wiki/Collider_(statistics)) which could result in creating a fictitious relation between  "New Engagement Strategy" and ```Revenue``` if ```Planning Summit``` is included as a feature during the influence estimation!! (this pattern is also known as [selection bias](https://catalogofbias.org/biases/collider-bias/))
 
 # COMMAND ----------
@@ -167,3 +167,7 @@ with mlflow.start_run(run_name="casual_discovery") as run:
         f.write(graph)
 
     mlflow.log_artifact("/databricks/driver/graph.txt", artifact_path="graph")
+
+# COMMAND ----------
+
+

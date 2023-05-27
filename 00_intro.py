@@ -16,10 +16,10 @@
 # MAGIC
 # MAGIC Predicting, classifying, or forecasting are tasks for which Machine Learning represents an ideal tool.  But, in the case of an Incentive Recommender,  more than predicting profit, the focus is on estimating the revenue effect of each of type incentive on a given customer.  Having these estimates allows picking the incentive with the highest positive effect (after discounting its cost).  
 # MAGIC
-# MAGIC Even Though, the gold standard for estimating causal effects is randomized control trials [(RCT)](https://en.wikipedia.org/wiki/Randomized_controlled_trial), under the described business setting using and RCT is not recommended as it could carry reputational risks or be unethical.  Also, logistics for an RCT experiment are complex and costly, making it an unaxtractive option.
+# MAGIC Even though, the gold standard for estimating causal effects is randomized control trials [(RCT)](https://en.wikipedia.org/wiki/Randomized_controlled_trial), under the described business setting using and RCT is not recommended as it could carry reputational risks or be unethical.  Also, logistics for an RCT experiment are complex and costly, making it an unattractive option.
 # MAGIC
 # MAGIC
-# MAGIC Instead, this accelerator shows how to estimate incentives effects given specific characteristics of a customer by using data recollected during a year of policy-less allocations.  The dataset probably holds many biases and blindly using Machine Learning would resul in misleading conclusions.  Luckily, this is where Causal ML shines, allowing us to discover the network of influences among the collected features, enrich this network with domain knowledge, identify how to isolate the influence of a given incentive controlling for biases,  and calculate an unbiased estimate of the incentive influence.  
+# MAGIC Instead, this accelerator shows how to estimate incentive effects given specific characteristics of a customer by using data recollected during a year of policy-less allocations.  The dataset probably holds many biases and blindly using Machine Learning would result in misleading conclusions.  Luckily, this is where Causal ML shines, allowing us to discover the network of influences among the collected features, enrich this network with domain knowledge, identify how to isolate the influence of a given incentive controlling for biases,  and calculate an unbiased estimate of the incentive influence.  
 # MAGIC
 # MAGIC
 # MAGIC ##Why PyWhy?   
@@ -39,10 +39,10 @@
 # MAGIC
 # MAGIC Feature Name | Type | Details
 # MAGIC :--- |:--- |:---
-# MAGIC **Revenue** | continuous | \\$ Annual revenue from customer given by the amount of software purchased
+# MAGIC **Revenue** | continuous | \$ Annual revenue from customer given by the amount of software purchased
 # MAGIC
 # MAGIC
-# MAGIC We consider three possible treatments, the interventions whose impact we wish to measure:
+# MAGIC We consider three possible treatments, the interventions, whose impact we wish to measure:
 # MAGIC
 # MAGIC
 # MAGIC Feature Name | Type | Details
@@ -69,7 +69,7 @@
 # MAGIC **Size** | continuous | customer's total revenue in the previous calendar year
 # MAGIC
 # MAGIC
-# MAGIC This data has been simulated and the incentives influence "ground truth" is therefore known
+# MAGIC This data has been simulated and the incentives influence "ground truth" is therefore known.
 # MAGIC
 # MAGIC
 # MAGIC
@@ -78,14 +78,14 @@
 # MAGIC The following steps are executed in order to develop a Personalized Incentive Recommender:
 # MAGIC
 # MAGIC
-# MAGIC 1- Casual Discovery:  this step focuses on discovering the of network of influences existing among the available features and enriching based on domain knowledge.  Having a clear understanding of this network allows identifying the best approach for isolating the influence of each of the incentives in a customer
+# MAGIC 1- Casual Discovery:  this step focuses on discovering the network of influences existing among the available features and enriching based on domain knowledge.  Having a clear understanding of this network allows identifying the best approach for isolating the influence of each of the incentives in a customer.
 # MAGIC
 # MAGIC
 # MAGIC This step is executed in the following notebook
 # MAGIC [01_causal_discovery](./01_Causal_Discovery.py)
 # MAGIC
 # MAGIC
-# MAGIC 2- Identification and Estimation:  this step finds the best way of isolating each of the incentives influences using the network defined in the previous step.  The isolation method determines which features need to be controlled when estimate the influence. A Causal ML method for estimation called [Double Machine Learning implemented](https://arxiv.org/abs/1608.00060) implmeneted at the [EconML package](https://econml.azurewebsites.net/spec/estimation/dml.html) is used to obtain an unbiased estimation.
+# MAGIC 2- Identification and Estimation:  this step finds the best way of isolating each of the incentives influences using the network defined in the previous step.  The isolation method determines which features need to be controlled when estimate the influence. A Causal ML method for estimation called [Double Machine Learning](https://arxiv.org/abs/1608.00060) implmeneted at the [EconML package](https://econml.azurewebsites.net/spec/estimation/dml.html) is used to obtain an unbiased estimation.
 # MAGIC
 # MAGIC
 # MAGIC The following notebook implements this step:
@@ -99,9 +99,13 @@
 # MAGIC [03_incentive_recommender]()
 # MAGIC
 # MAGIC
-# MAGIC 4- Tests (Model Refutation): in order to have a good level of confidence in a developed estimators,  different tests are applied.  The tests mainly consist in gradually injecting noise or distorting the dataset to capture the point in which the estimator is no longer valid
+# MAGIC 4- Tests (Model Refutation): in order to have a good level of confidence in a developed estimators,  different tests are applied.  The tests mainly consist in gradually injecting noise or distorting the dataset to capture the point in which the estimator is no longer valid.
 # MAGIC
 # MAGIC This step is executing in the following notebook:
 # MAGIC [04_refutation]()
 # MAGIC
 # MAGIC Important:  Please execute the “RUNME” notebook to prepare your Databricks environment for the notebooks mentioned above.  The “RUNME” notebook will create a new Databricks Workflow pointing to each of the notebook,  create a new job cluster to execute the workflow, and  Install all the dependency libraries.
+
+# COMMAND ----------
+
+

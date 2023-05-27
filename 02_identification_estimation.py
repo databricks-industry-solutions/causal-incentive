@@ -9,9 +9,9 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We will use the casual graph obtained from the previous step to guide the identification step.  In this step the best method to isolate the effect of a given incentive on ```Revenue``` is identified.  The package DoWhy automates this step by relaying on the well established [Do-Calculus](https://ftp.cs.ucla.edu/pub/stat_ser/r402.pdf) theoretical framework
+# MAGIC We will use the casual graph obtained from the previous step to guide the identification step.  In this step the best method to isolate the effect of a given incentive on ```Revenue``` is identified.  The package DoWhy automates this step by relying on the well established [Do-Calculus](https://ftp.cs.ucla.edu/pub/stat_ser/r402.pdf) theoretical framework.
 # MAGIC
-# MAGIC First, lets load the graph from [MLflow](https://www.databricks.com/product/managed-mlflow)
+# MAGIC First, let's load the graph from [MLflow](https://www.databricks.com/product/managed-mlflow).
 
 # COMMAND ----------
 
@@ -20,14 +20,16 @@ graph = mlflow.artifacts.load_text("/databricks/driver/graph.txt")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We will now identify the total effect of ```Tech Support``` in ```Revenue``` using <b>DoWhy</b> to obtain the <b>Average Treatement Effect (ATE)</b> estimand
+# MAGIC We will now identify the total effect of ```Tech Support``` in ```Revenue``` using <b>DoWhy</b> to obtain the <b>Average Treatement Effect (ATE)</b> estimand.
 
 # COMMAND ----------
 
+# Instantiate a model object to estimate the tech support effect
 tech_support_effect_model = dowhy.CausalModel(
     data=input_df, graph=graph, treatment="Tech Support", outcome="Revenue"
 )
 
+# Identify methods we can use to estimate the tech support effect (estimands)
 tech_support_total_effect_identified_estimand = (
     tech_support_effect_model.identify_effect(
         estimand_type="nonparametric-ate",
@@ -35,28 +37,35 @@ tech_support_total_effect_identified_estimand = (
     )
 )
 
+# Print out all identified estimands
 print(tech_support_total_effect_identified_estimand)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC <b>DoWhy</b> find the [backdoor](http://causality.cs.ucla.edu/blog/index.php/category/back-door-criterion/) method as the best one to identify the effect.  It also determines which features should be use for the estimation.  
+# MAGIC <b>DoWhy</b> find the [backdoor](http://causality.cs.ucla.edu/blog/index.php/category/back-door-criterion/) method as the best one to identify the effect.  It also determines which features should be used for the estimation.  
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ###Estimating "Tech Support" total effect on "Revenue"
 # MAGIC
-# MAGIC In order to obtain an unbias estimation we will use an approach call [Double Machine Learning (DML)](https://academic.oup.com/ectj/article/21/1/C1/5056401)  which is implemented in the [PyWhy](https://github.com/py-why) package [EconML](https://github.com/py-why/EconML)
+# MAGIC In order to obtain an unbias estimation we will use an approach call [Double Machine Learning (DML)](https://academic.oup.com/ectj/article/21/1/C1/5056401)  which is implemented in the [PyWhy](https://github.com/py-why) package [EconML](https://github.com/py-why/EconML). We use a logistic regression model for predicting the treatment and lasso for predicting the outcome.
 
 # COMMAND ----------
 
+# Disable the mlflow autolog feature
 mlflow.autolog(disable=True)
 
+# Set up the treatment (t) and outcome (y) models for DML. See notebook-config for detail.
 model_t, model_y = setup_treatment_and_out_models()
 
+# Specify the effect modifiers, which we use to segment the customer base to provide personalized recommendations
 effect_modifiers = ["Size", "Global Flag"]
+
+# Specify the estimand recommended in the previous cell
 method_name = "backdoor.econml.dml.LinearDML"
+
 init_params = {
     "model_t": model_t,
     "model_y": model_y,
@@ -66,6 +75,7 @@ init_params = {
     "mc_iters": 10,
 }
 
+# Estimate the effect of tech support
 tech_support_total_effect_estimate = tech_support_effect_model.estimate_effect(
     tech_support_total_effect_identified_estimand,
     effect_modifiers=effect_modifiers,
@@ -73,6 +83,7 @@ tech_support_total_effect_estimate = tech_support_effect_model.estimate_effect(
     method_params={"init_params": init_params},
 )
 
+# Extract the interpretation of the estimate
 tech_support_total_effect_estimate.interpret()
 
 # COMMAND ----------
@@ -251,7 +262,7 @@ new_strategy_effect_estimate.value
 # MAGIC %md
 # MAGIC ###Comparing estimated effects with ground thruth
 # MAGIC
-# MAGIC As mentioned before the data for this accelerator was generated using probabilistic methods.  The ground truth is provided in the original dataset.  When compared with the estimated effect we see the estimations are very close
+# MAGIC As mentioned before the data for this accelerator was generated using probabilistic methods.  The ground truth is provided in the original dataset.  When compared with the estimated effect we see the estimations are very close.
 
 # COMMAND ----------
 
@@ -273,3 +284,7 @@ estimates_df = pd.DataFrame(
 )
 
 compare_estimations_vs_ground_truth(ground_truth_df, estimates_df)
+
+# COMMAND ----------
+
+

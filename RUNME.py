@@ -218,7 +218,7 @@ job_json = {
                     "init_scripts": [
                         {
                             "dbfs": {
-                                "destination": "/databricks/scripts/causal_init.sh"
+                                "destination": "dbfs:/databricks/scripts/causal_init.sh"
                             }
                         }
                     ]
