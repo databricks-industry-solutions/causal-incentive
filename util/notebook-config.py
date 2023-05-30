@@ -10,6 +10,7 @@ import functools
 import econml
 import dowhy
 import sklearn
+%matplotlib inline
 
 # COMMAND ----------
 
