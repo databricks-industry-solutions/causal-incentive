@@ -28,8 +28,10 @@
 # MAGIC
 # MAGIC ##Why Databricks Lakehouse?
 # MAGIC Databricks offers a great option for Causal ML projects development and management.  It provides a scalable unified platform scoping Data and AI.  Data needed to train models is readily available via [Delta Lakes](https://www.databricks.com/product/delta-lake-on-databricks) and Casual ML models can be easily managed and deployed using [MLflow](https://www.databricks.com/product/managed-mlflow).
-# MAGIC
-# MAGIC
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ##Scenario and Data Description
 # MAGIC This scenario is based on a case study found a PyWhy’s EconML package documentation [(Multi-investment attribution)](https://github.com/py-why/EconML/blob/main/notebooks/CustomerScenarios/Case%20Study%20-%20Multi-investment%20Attribution%20at%20A%20Software%20Company%20-%20EconML%20+%20DoWhy.ipynb).  It has been extended to take advantage of the benefits offered by the Databricks Lakehouse platform.
 # MAGIC
@@ -70,42 +72,21 @@
 # MAGIC
 # MAGIC
 # MAGIC This data has been simulated and the incentives influence "ground truth" is therefore known.
-# MAGIC
-# MAGIC
-# MAGIC
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC
 # MAGIC ##Steps
 # MAGIC The following steps are executed in order to develop a Personalized Incentive Recommender:
 # MAGIC
 # MAGIC
-# MAGIC 1- Casual Discovery:  this step focuses on discovering the network of influences existing among the available features and enriching based on domain knowledge.  Having a clear understanding of this network allows identifying the best approach for isolating the influence of each of the incentives in a customer.
+# MAGIC 1. [Casual Discovery]($./01_causal_discovery):  this step focuses on discovering the network of influences existing among the available features and enriching based on domain knowledge.  Having a clear understanding of this network allows identifying the best approach for isolating the influence of each of the incentives in a customer.    
 # MAGIC
+# MAGIC 2. [Identification and Estimation]($./02_identification_estimation):  this step finds the best way of isolating each of the incentives influences using the network defined in the previous step.  The isolation method determines which features need to be controlled when estimate the influence. A Causal ML method for estimation called [Double Machine Learning](https://arxiv.org/abs/1608.00060) implmeneted at the [EconML package](https://econml.azurewebsites.net/spec/estimation/dml.html) is used to obtain an unbiased estimation.
 # MAGIC
-# MAGIC This step is executed in the following notebook
-# MAGIC [01_causal_discovery](./01_Causal_Discovery.py)
+# MAGIC 3. [Personalized Incentive Recommender]($./03_incentive_recommender):  armed with the Causal ML influence estimators trained in the previous step, a composite model is developed to recommend the incentive or combination of incentives returning the highest profit based on basic characteristics of the customer.
 # MAGIC
-# MAGIC
-# MAGIC 2- Identification and Estimation:  this step finds the best way of isolating each of the incentives influences using the network defined in the previous step.  The isolation method determines which features need to be controlled when estimate the influence. A Causal ML method for estimation called [Double Machine Learning](https://arxiv.org/abs/1608.00060) implmeneted at the [EconML package](https://econml.azurewebsites.net/spec/estimation/dml.html) is used to obtain an unbiased estimation.
-# MAGIC
-# MAGIC
-# MAGIC The following notebook implements this step:
-# MAGIC [02_identification_and_estimation]()
-# MAGIC
-# MAGIC
-# MAGIC 3- Personalized Incentive Recommender:  armed with the Causal ML influence estimators trained in the previous step, a composite model is developed to recommend the incentive or combination of incentives returning the highest profit based on basic characteristics of the customer.
-# MAGIC
-# MAGIC
-# MAGIC The Recommender is develop on the following notebook:
-# MAGIC [03_incentive_recommender]()
-# MAGIC
-# MAGIC
-# MAGIC 4- Tests (Model Refutation): in order to have a good level of confidence in a developed estimators,  different tests are applied.  The tests mainly consist in gradually injecting noise or distorting the dataset to capture the point in which the estimator is no longer valid.
-# MAGIC
-# MAGIC This step is executing in the following notebook:
-# MAGIC [04_refutation]()
+# MAGIC 4. [Tests (Model Refutation)]($./04_refutation): in order to have a good level of confidence in a developed estimators,  different tests are applied.  The tests mainly consist in gradually injecting noise or distorting the dataset to capture the point in which the estimator is no longer valid.
 # MAGIC
 # MAGIC Important:  Please execute the “RUNME” notebook to prepare your Databricks environment for the notebooks mentioned above.  The “RUNME” notebook will create a new Databricks Workflow pointing to each of the notebook,  create a new job cluster to execute the workflow, and  Install all the dependency libraries.
-
-# COMMAND ----------
-
-
