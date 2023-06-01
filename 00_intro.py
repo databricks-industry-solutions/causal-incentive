@@ -51,7 +51,7 @@
 # MAGIC :--- |:--- |:---
 # MAGIC **Tech Support** | binary | whether the customer received free tech support during the year
 # MAGIC **Discount** | binary | whether the customer was given a discount during the year
-# MAGIC **New Strategy** | binary | whether the customer was targeted for a new engagement strategy with different outreach behaviors
+# MAGIC **New Engagement Strategy** | binary | whether the customer was targeted for a new engagement strategy with different outreach behaviors
 # MAGIC
 # MAGIC
 # MAGIC Also, a variety of additional customer characteristics that may affect revenue are considered:
@@ -72,6 +72,73 @@
 # MAGIC
 # MAGIC
 # MAGIC This data has been simulated and the incentives influence "ground truth" is therefore known.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Exploratory data analysis
+# MAGIC
+# MAGIC Given the story and explanation above, let's take a look at our input dataframe to do just a bit of exploratory analysis to get a better feel for the data and prepare for the rest of the solution accelerator.
+# MAGIC
+# MAGIC We'll start by running our shared config notebook which sets up our libraries and utility functions as well as loads our dataframes, and then start off the analysis with a quick run of the Databricks profiler. Using automated profiling techniques like this is a great way to quickly check out a dataset at a glance to look for common quality issues, understand the data types and basic summary statistics, as well as look at the top level distributions.
+
+# COMMAND ----------
+
+# MAGIC %run ./util/notebook-config
+
+# COMMAND ----------
+
+# Adjust the types of the input_df for exploratory analysis in the rest of the notebook
+input_df = input_df.astype(normal_type_map)
+
+# Adjust them a bit further but only for running the data profile
+dbutils.data.summarize(input_df.astype(summarize_type_map), precise=True)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC The data profile gives us a lot of information. From it we can see we have 5 numerical columns including our target revenue, with the rest as binary categorical columns. We can also see that there is no missing data, and see which categoricals are balanced vs not. The distribution of our numerical columns is also visible at a glance, along with the summary statistics. Finally, there are exactly 10k rows and no missing values. All in all, its pretty easy to observe that this appears to be a very clean synthetic dataset, which is of course the case.
+# MAGIC
+# MAGIC We can also check the impact of each individual treatment on revenue to see which has an impact at the top level.
+
+# COMMAND ----------
+
+fig, ax = plt.subplots(1, len(treatment_cols), figsize=(12, 4), sharey=True)
+for i in range(len(treatment_cols)):
+    sns.boxplot(data=input_df, x=treatment_cols[i], y="Revenue", ax=ax[i]);
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC From this chart we can certainly begin to suspect that `Tech Support` and `Discount` are going to have a positive impact on Revenue, while `New Engagement Strategy` does not appear to have an impact.
+# MAGIC
+# MAGIC Next we can have a look at the pair plot for the numerical values to check the distributions and relationships among the numericals.
+
+# COMMAND ----------
+
+sns.pairplot(input_df);
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Here it is clear that `PC count` and `Employee Count` are correlated, which makes sense intuitively: if I have more employees I'm going to need more PC's. Likewise if I have a larger company in terms of `Size` then I'm going to both have more revenue and have higher `IT spend`. We'll need to be aware of these relationships as these are clearly outside of our direct control as a software provider vs the items we can control (our treatments).
+# MAGIC
+# MAGIC Lastly let's have a look at the relationships between the numericals and our treatments. Since we already observed earlier an exponential distribution on our numericals we can go ahead and scale the y-axis on each logarithmically.
+
+# COMMAND ----------
+
+fig, ax = plt.subplots(len(numerical_cols), len(treatment_cols), figsize=(12, 15), sharey="row")
+for i in range(len(numerical_cols)):
+    for j in range(len(treatment_cols)):
+        sns.boxplot(data=input_df, x=treatment_cols[j], y=numerical_cols[i], ax=ax[i][j]);
+        ax[i][j].set_yscale('log')
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC At a glance we can perhaps see some correlation between tech support and size, as well as tech support and IT spend. However, if it is there, its not so strong. And for the remaining pairs, it is virtually negligble which is useful to know. We'll be able to use this information to help isolate and identify the true relationships among the variables in later notebooks to determine our causal graph and estimate impact.
+# MAGIC
+# MAGIC Now that we have a more intuitive feel for the data and have done some initial analysis and confirmed the quality of our synthetic dataset, lets continue with the demonstration and go beyond correlations to see if we can infer causation among these attributes. In particular, we'll see how to both identify causal relationships and confounders as well as estimate the effects, and then use that information to recommend a personalized incentive structure based on what we know about the accounts. At the end, we'll also demonstrate advanced techniques to ensure we're unable to refute our developed estimators.
 
 # COMMAND ----------
 
