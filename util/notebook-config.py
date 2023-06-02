@@ -10,7 +10,12 @@ import functools
 import econml
 import dowhy
 import sklearn
+
+from warnings import filterwarnings
+filterwarnings("ignore", "iteritems is deprecated")
+
 %matplotlib inline
+%config InlineBackend.figure_format = "retina"
 
 # COMMAND ----------
 
@@ -349,3 +354,28 @@ mlflow.set_experiment(experiment_name)
 ground_truth_path = "s3://db-gtm-industry-solutions/data/rcg/causal_incentive/ground_truth.parquet"
 ground_truth_df = spark.read.parquet(ground_truth_path).toPandas()
 input_df = ground_truth_df.iloc[:, 0:14]
+
+
+# Some additional metadata we can use as needed to work with the input dataframe.
+treatment_cols = ["Tech Support", "Discount", "New Engagement Strategy"]
+characteristic_cols = [
+    "Global Flag", "Major Flag", "SMC Flag", "Commercial Flag", 
+    "Planning Summit", "New Product Adoption",
+    "IT Spend", "Employee Count", "PC Count", "Size"]
+categorical_cols = [
+    "Tech Support", "Discount", "New Engagement Strategy",
+    "Global Flag", "Major Flag", "SMC Flag", "Commercial Flag", 
+    "Planning Summit", "New Product Adoption"]
+numerical_cols = ["IT Spend", "Employee Count", "PC Count", "Size"]
+target_col = "Revenue"
+
+# A type map to use for normal exploratory analysis
+normal_type_map = {k: v for (k, v) in 
+    [(c, "category") for c in categorical_cols] +
+    [(c, "double") for c in numerical_cols + [target_col]]}
+
+# A type map to use for profiling with the Databricks profiler
+# (it helps to have the categoricals as boolean for it to treat the binaries as categorical)
+summarize_type_map = {k: v for (k, v) in 
+    [(c, "boolean") for c in categorical_cols] +
+    [(c, "double") for c in numerical_cols + [target_col]]}
