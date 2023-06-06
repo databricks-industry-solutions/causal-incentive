@@ -141,7 +141,9 @@ for i in range(len(numerical_cols)):
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Lastly, let's see how different treatment mixes are distributed across customers, which could give us an insight into the current policy. Building upon what we saw in the box plots above (```New Enagegement Strategy``` seems to have a little effect on ```Revenue``` compared to ```Tech Support``` and ```Discount```), we will label the treatment into four types: ```no incentive``` when a customer received neither ```Tech Support``` nor ```Discount```, ```tech support``` if a customer only received ```Tech Support```, ```discount``` if a customer only received ```Discount```, and ```tech support and discount``` if a customer received both. We color code each customer based on these treatment types and draw a scatter plot along the axis ```PC Count``` and ```Size```.
+# MAGIC Lastly, let's see how different treatment mix are distributed across customers, which could give us a hint on the current policy on incentives. 
+# MAGIC
+# MAGIC Building upon what we saw in the box plots above (```New Enagegement Strategy``` seems to have a little effect on ```Revenue``` compared to ```Tech Support``` and ```Discount```), we will label the treatment into four types: ```no incentive``` when a customer received neither ```Tech Support``` nor ```Discount```, ```tech support``` if a customer only received ```Tech Support```, ```discount``` if a customer only received ```Discount```, and ```tech support and discount``` if a customer received both. We color code each customer based on the treatment type they received and draw a scatter plot against the axis ```PC Count``` and ```Size```. We choose ```PC Count``` as it has a direct effect on the cost of the ```Tech Support``` incentive ($100 per licensed PC) and ```Size``` because this does not seem to influence directly the allocation of the incentives, however it does have an influence on ```Revenue```.
 
 # COMMAND ----------
 
@@ -152,7 +154,7 @@ plot_policy(input_df, input_df.apply(assign_treatment_label, axis=1))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Interestingly, the scatter plot shows that there seems to be no clear guidance on which customer receives which treatment at least based on the two attributes. This is unlikely in a real case, where you typically incentive your customers based on the scale of the company both in terms of revenue and headcount. But again we are using synthetic data for this solution accelerator and the assignment of treatment type is completely random.
+# MAGIC Interestingly, the scatter plot shows that there seems to be no clear guidance on which customer to receive which treatment at least based on the two attributes. Indeed, this simulation assumes no allocation policy, which results in allocation depending solely on the sales teams' decisions and are not consistent. Most probably, this lead to a sub-optimal return.
 # MAGIC
 # MAGIC Now that we have a more intuitive feel for the data and have done some initial analysis and confirmed the quality of our synthetic dataset, lets continue with the demonstration and go beyond correlations to see if we can infer causation among these attributes. In particular, we'll see how to both identify causal relationships and confounders as well as estimate the effects, and then use that information to recommend a personalized incentive structure based on what we know about the accounts. At the end, we'll also demonstrate advanced techniques to ensure we're unable to refute our developed estimators.
 
