@@ -137,6 +137,24 @@ for i in range(len(numerical_cols)):
 
 # MAGIC %md
 # MAGIC At a glance we can perhaps see some correlation between tech support and size, as well as tech support and IT spend. However, if it is there, its not so strong. And for the remaining pairs, it is virtually negligble which is useful to know. We'll be able to use this information to help isolate and identify the true relationships among the variables in later notebooks to determine our causal graph and estimate impact.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Lastly, let's see how different treatment mix are distributed across customers, which could give us a hint on the current policy on incentives. 
+# MAGIC
+# MAGIC Building upon what we saw in the box plots above (```New Enagegement Strategy``` seems to have a little effect on ```Revenue``` compared to ```Tech Support``` and ```Discount```), we will label the treatment into four types: ```no incentive``` when a customer received neither ```Tech Support``` nor ```Discount```, ```tech support``` if a customer only received ```Tech Support```, ```discount``` if a customer only received ```Discount```, and ```tech support and discount``` if a customer received both. We color code each customer based on the treatment type they received and draw a scatter plot against the axis ```PC Count``` and ```Size```. We choose ```PC Count``` as it has a direct effect on the cost of the ```Tech Support``` incentive ($100 per licensed PC) and ```Size``` because this does not seem to influence directly the allocation of the incentives, however it does have an influence on ```Revenue```.
+
+# COMMAND ----------
+
+# Plot the current policy of each customer
+plt.figure(figsize=(10, 7.5))
+plot_policy(input_df, input_df.apply(assign_treatment_label, axis=1))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Interestingly, the scatter plot shows that there seems to be no clear guidance on which customer to receive which treatment at least based on the two attributes. Indeed, this simulation assumes no allocation policy, which results in allocation depending solely on the sales teams' decisions and are not consistent. Most probably, this lead to a sub-optimal return.
 # MAGIC
 # MAGIC Now that we have a more intuitive feel for the data and have done some initial analysis and confirmed the quality of our synthetic dataset, lets continue with the demonstration and go beyond correlations to see if we can infer causation among these attributes. In particular, we'll see how to both identify causal relationships and confounders as well as estimate the effects, and then use that information to recommend a personalized incentive structure based on what we know about the accounts. At the end, we'll also demonstrate advanced techniques to ensure we're unable to refute our developed estimators.
 

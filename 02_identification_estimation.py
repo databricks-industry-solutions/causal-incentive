@@ -60,7 +60,7 @@ mlflow.autolog(disable=True)
 # Set up the treatment (t) and outcome (y) models for DML. See notebook-config for detail.
 model_t, model_y = setup_treatment_and_out_models()
 
-# Specify the effect modifiers, which we use to segment the customer base to provide personalized recommendations
+# Specify the effect modifiers, which are variables that can change the magnitude of the effect based on the groups.
 effect_modifiers = ["Size", "Global Flag"]
 
 # Specify the estimand recommended in the previous cell
