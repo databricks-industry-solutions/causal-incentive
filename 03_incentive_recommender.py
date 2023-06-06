@@ -6,7 +6,7 @@
 # MAGIC %md
 # MAGIC #### Individualized Incentive Recommendations
 # MAGIC
-# MAGIC Armed with the models trained in the previous step,  we can develop a composite model that estimates the effects of each incentive on new companies based on their especific characteristics (```effect_modifiers```).  The model will select the incentive or combination of incentives with the highest effect on ```Revenue``` after accounting for the cost of the incentive. In the following cell, we define this composite model using MLflow's custom python model.
+# MAGIC Armed with the models trained in the previous step,  we can develop a composite model that estimates the effects of each incentive on new companies based on their specific characteristics.  The model will select the incentive or combination of incentives with the highest effect on ```Revenue``` after accounting for the cost of the incentive. In the following cell, we define this composite model using MLflow's custom python model.
 
 # COMMAND ----------
 
@@ -72,9 +72,9 @@ class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
 # MAGIC %md
 # MAGIC ###Registering in MLflow the Personalized Incentive Recommender model
 # MAGIC
-# MAGIC We will instantiate the composite model for personalized incentive recommendation. Note that we are passing on only two models for the treatment effect estimation: i.e. ```tech_support_total_effect_dowhy_model``` and ```discount_dowhy_model```, althought we were intially interested in measuring the effect of ```New Engagement Strategy``` as well. This is because we have in the previous notebook found that this treatment has no effect on ```Revenue```. ```effect_modifiers``` give us a way to segment our dataset, which in turn will allow us to compute an incentive recommendation for each segment.
+# MAGIC We will instantiate the composite model for personalized incentive recommendation. Note that we are passing on only two models for the treatment effect estimation: i.e. ```tech_support_total_effect_dowhy_model``` and ```discount_dowhy_model```, althought we were intially interested in measuring the effect of ```New Engagement Strategy``` as well. This is because we found in the previous notebook that this treatment has no effect on ```Revenue```.
 # MAGIC
-# MAGIC After we instantiate the model, we will log it in MLflow togetehr with some other important information like model signiture and dependencies. Eventually this model will get registered in MLflow as well under the model name ```personalized_policy_recommender```.
+# MAGIC After we instantiate the model, we will log it in MLflow together with some other important information like model signiture and dependencies. Eventually this model will get registered under the model name ```personalized_policy_recommender```.
 
 # COMMAND ----------
 
@@ -148,6 +148,27 @@ display(final_df)
 # COMMAND ----------
 
 compare_policies_effects(final_df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Individualized Policy Recommendations 
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC We can take a step deeper and inspect the best treatment plan for each customer. This links to the exploratory data analysis that we performed in the first notebook (```00_intro```), where we found that there was no strategy for providing incentives to customers. We color code the customer based on the recommended best treatment types and that gives us boundaries along the values of ```PC Count``` and ```Size```. These boudaries are linear because we use linear models for the effect estimation using double machine learning. Had we assigned the treatments based on our model suggestion instead of at random, we could have maximized the return.    
+
+# COMMAND ----------
+
+# Plot the recommended policy of each customer
+plt.figure(figsize=(10, 7.5))
+plot_policy(final_df, final_df["recommended incentive"])
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC This modeling technique (DML) lets us estimate the isolated effect of a given incentive while controlling for confounders. We can obtain an unbiased estimate for each treatment, which is something hard to achieve using traditional ML techniques.
 
 # COMMAND ----------
 

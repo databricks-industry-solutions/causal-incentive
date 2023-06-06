@@ -337,6 +337,39 @@ def compare_estimations_vs_ground_truth(original_df, estimates_df):
         )
     ]
 
+
+def assign_treatment_label(x):
+    """Assigns a treatment type based on the columns Tech Support and Discount."""
+    if x["Tech Support"] == 1 and x["Discount"] == 1:
+        return "tech support and discount"
+    elif x["Tech Support"] == 1 and x["Discount"] == 0:
+        return "tech support"
+    elif x["Tech Support"] == 0 and x["Discount"] == 1:
+        return "discount"
+    elif x["Tech Support"] == 0 and x["Discount"] == 0:
+        return "no incentive"
+      
+
+def plot_policy(df, treatment):
+    """Function to plot a policy for each customer."""
+    all_treatments = np.array(['no incentive', 'tech support', 'discount', 'tech support and discount'])
+    ax1 = sns.scatterplot(
+        x=df["Size"],
+        y=df["PC Count"],
+        hue=treatment,
+        hue_order=all_treatments,
+        cmap="Dark2",
+        s=40,
+    )
+    plt.legend(title="Investment Policy")
+    plt.setp(
+        ax1,
+        xlabel="Size",
+        ylabel="PC Count",
+        title="Investment Policy by Customer",
+    )
+    plt.show()
+
 # COMMAND ----------
 
 # Common configuration settings and data loading across all notebooks.
