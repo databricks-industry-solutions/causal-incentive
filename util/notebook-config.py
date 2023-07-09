@@ -29,6 +29,18 @@ from causallearn.graph.Endpoint import Endpoint
 from causallearn.graph.Graph import Graph
 from causallearn.graph.Node import Node
 from causallearn.graph.NodeType import NodeType
+from causallearn.graph.GraphNode import GraphNode
+from causallearn.utils.PCUtils.BackgroundKnowledge import BackgroundKnowledge
+
+
+def add_background_knowledge(edges):
+    """Add prior edges according to assigned causal connections."""
+    bk = BackgroundKnowledge()
+    for edge in edges:
+        node1 = GraphNode(edge['from'])
+        node2 = GraphNode(edge['to'])
+        bk.add_required_by_node(node1, node2)
+    return bk
 
 
 def add_directions(causal_graph, directions):

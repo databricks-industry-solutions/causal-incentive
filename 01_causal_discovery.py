@@ -6,15 +6,29 @@
 # MAGIC %md
 # MAGIC #Discovering the network of influences among the Features
 # MAGIC
-# MAGIC In order to isolate the influence we plan to estimate,  we need first to understand the relations among the available features.  We will use [PC algorithm](https://www.youtube.com/watch?v=o2A61bJ0UCw) implemented in the [PyWhy](https://www.pywhy.org/) package called [CausalLearn](https://github.com/py-why/causal-learn), to discover the basic skeleton of the network.  
+# MAGIC In order to isolate the influence we plan to estimate,  we need first to understand the relations among the available features.  We will use [PC algorithm](https://www.youtube.com/watch?v=o2A61bJ0UCw) implemented in the [PyWhy](https://www.pywhy.org/) package called [CausalLearn](https://github.com/py-why/causal-learn), to discover the basic skeleton of the network. Before generating the skeleton, it is possible to set some requirements on the graph. For example, we discussed in the previous notebook that ```Size``` affects ```IT Spend``` and ```Employee Count``` influences ```PC Count```. We will add these causal connections when we generate the graph.
 
 # COMMAND ----------
 
 import causallearn
 from causallearn.search.ConstraintBased.PC import pc
 
+required_edges = [
+    {"from": "Size", "to": "IT Spend"},
+    {"from": "Employee Count", "to": "PC Count"},
+]
+
+# Get the background_knowledge parameter from the required edges defined above. 
+background_knowledge = add_background_knowledge(
+  edges = required_edges
+)
+
 # Parameters
-parameters = {"node_names": input_df.columns, "alpha": 0.01, "indep_test": "fisherz"}
+parameters = {"node_names": input_df.columns, 
+              "background_knowledge": background_knowledge, 
+              "alpha": 0.01, 
+              "indep_test": "fisherz"}
+
 cg = pc(data=np.vstack(input_df.to_numpy()), **parameters)
 
 # Visualization using pydot
@@ -28,7 +42,7 @@ cg.draw_pydot_graph()
 # MAGIC - ```Discount``` seems to have a direct impact in ```Revenue```.
 # MAGIC - ```Tech Support``` appears to have a direct impact in ```Revenue``` and a mediated one through ```New Product Adoption```.
 # MAGIC - The ```New Engagement Strategy``` seems not to influence ```Revenue```.
-# MAGIC - Both ```Revenue``` and ```New Engagement Strategy``` influence ```Planning Summit```. This representas a [collider pattern](https://en.wikipedia.org/wiki/Collider_(statistics)) which could result in creating a fictitious relation between  "New Engagement Strategy" and ```Revenue``` if ```Planning Summit``` is included as a feature during the influence estimation!! (this pattern is also known as [selection bias](https://catalogofbias.org/biases/collider-bias/))
+# MAGIC - Both ```Revenue``` and ```New Engagement Strategy``` influence ```Planning Summit```. This representas a [collider pattern](https://en.wikipedia.org/wiki/Collider_(statistics)) which could result in creating a fictitious relation between ```New Engagement Strategy``` and ```Revenue``` if ```Planning Summit``` is included as a feature during the influence estimation!! (this pattern is also known as [selection bias](https://catalogofbias.org/biases/collider-bias/))
 
 # COMMAND ----------
 
@@ -40,11 +54,9 @@ cg.draw_pydot_graph()
 # MAGIC %md
 # MAGIC The skeleton lacks directions in some of the relations.  Some of the missing directions are obvious:
 # MAGIC
-# MAGIC - ```Size``` -> ```IT Spend```   
 # MAGIC - ```IT Spend``` -> ```Tech Support```
 # MAGIC - ```Tech Support``` -> ```New Product Adoption```
 # MAGIC - ```Major Flag``` -> ```New Engagment Strategy```
-# MAGIC - ```Employee count``` -> ```PC Count```
 # MAGIC
 # MAGIC We will add these directions to the network:
 
@@ -52,11 +64,9 @@ cg.draw_pydot_graph()
 
 # Adding missing directions
 added_directions = [
-    {"from": "Size", "to": "IT Spend"},
     {"from": "IT Spend", "to": "Tech Support"},
     {"from": "Tech Support", "to": "New Product Adoption"},
     {"from": "Major Flag", "to": "New Engagement Strategy"},
-    {"from": "Employee Count", "to": "PC Count"},
 ]
 
 add_directions(
