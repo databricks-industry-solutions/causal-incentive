@@ -37,40 +37,41 @@ estimate = wrapped_model.get_estimate()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Let's now test if adding an artifitial feature which influences both the the probability of giving a ```Discount``` and the ```Revenue```, would yield a significant different result.
+# MAGIC Let's now test if adding an artificial feature which influences both the the probability of giving a ```Discount``` and the ```Revenue```, would yield a significant different result.
 
 # COMMAND ----------
 
-res_random_common_cause = model.refute_estimate(
-    estimand=estimand,
-    estimate=estimate,
-    show_progress_bar=True,
-    method_name="random_common_cause",
-    num_simulations=100,
-    n_jobs=16,
-)
-
-refutation_random_common_cause_df = pd.DataFrame(
-    [
-        {
-            "Refutation Type": res_random_common_cause.refutation_type,
-            "Estimated Effect": res_random_common_cause.estimated_effect,
-            "New Effect": res_random_common_cause.new_effect,
-            "Refutation Result (p value)": res_random_common_cause.refutation_result[
-                "p_value"
-            ],
-        }
-    ]
-)
-
-refutation_random_common_cause_df
+# MAGIC %matplotlib inline
+# MAGIC res_random_common_cause = model.refute_estimate(
+# MAGIC     estimand=estimand,
+# MAGIC     estimate=estimate,
+# MAGIC     show_progress_bar=True,
+# MAGIC     method_name="random_common_cause",
+# MAGIC     num_simulations=100,
+# MAGIC     n_jobs=16,
+# MAGIC )
+# MAGIC
+# MAGIC refutation_random_common_cause_df = pd.DataFrame(
+# MAGIC     [
+# MAGIC         {
+# MAGIC             "Refutation Type": res_random_common_cause.refutation_type,
+# MAGIC             "Estimated Effect": res_random_common_cause.estimated_effect,
+# MAGIC             "New Effect": res_random_common_cause.new_effect,
+# MAGIC             "Refutation Result (p value)": res_random_common_cause.refutation_result[
+# MAGIC                 "p_value"
+# MAGIC             ],
+# MAGIC         }
+# MAGIC     ]
+# MAGIC )
+# MAGIC
+# MAGIC refutation_random_common_cause_df
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC Let's now execute a similar test, but this time the new feature will be similated but not included in the estimation.  This mimics an scenario where a factor that influences both ```Discount``` and ```Revenue``` exists but we are unaware of it,  in other words the factor is "un-observed".  
 # MAGIC
-# MAGIC The test reports back a plot showing the effect of different "unobserved" factor values in the probability of applying "treatement" or incentive (```Discount```),  the outcome value (```Revenue```), and the estimated incentive effect.
+# MAGIC The test reports back a plot showing the effect of different "unobserved" factor values in the probability of applying "treatment" or incentive (```Discount```),  the outcome value (```Revenue```), and the estimated incentive effect.
 
 # COMMAND ----------
 
@@ -220,3 +221,8 @@ refutation_df = pd.concat(
     ]
 )
 refutation_df
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC © 2023 Databricks, Inc. All rights reserved. The source in this notebook is provided subject to the Databricks License. All included or referenced third party libraries are subject to the licenses set forth below.

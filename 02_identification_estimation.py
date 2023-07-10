@@ -9,7 +9,7 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We will use the casual graph obtained from the previous step to guide the identification step.  In this step the best method to isolate the effect of a given incentive on ```Revenue``` is identified.  The package DoWhy automates this step by relying on the well established [Do-Calculus](https://ftp.cs.ucla.edu/pub/stat_ser/r402.pdf) theoretical framework.
+# MAGIC We will use the causal graph obtained from the previous step to guide the identification step.  In this step the best method to isolate the effect of a given incentive on ```Revenue``` is identified.  The package DoWhy automates this step by relying on the well established [Do-Calculus](https://ftp.cs.ucla.edu/pub/stat_ser/r402.pdf) theoretical framework.
 # MAGIC
 # MAGIC First, let's load the graph from [MLflow](https://www.databricks.com/product/managed-mlflow).
 
@@ -20,7 +20,7 @@ graph = load_graph_from_latest_mlflow_run(experiment_name)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We will now identify the total effect of ```Tech Support``` in ```Revenue``` using <b>DoWhy</b> to obtain the <b>Average Treatement Effect (ATE)</b> estimand.
+# MAGIC We will now identify the total effect of ```Tech Support``` in ```Revenue``` using [DoWhy](https://github.com/py-why/dowhy) to obtain the <b>Average Treatement Effect (ATE)</b> estimand.
 
 # COMMAND ----------
 
@@ -43,7 +43,7 @@ print(tech_support_total_effect_identified_estimand)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC <b>DoWhy</b> find the [backdoor](http://causality.cs.ucla.edu/blog/index.php/category/back-door-criterion/) method as the best one to identify the effect.  It also determines which features should be used for the estimation.  
+# MAGIC [DoWhy](https://github.com/py-why/dowhy) selects the [backdoor](http://causality.cs.ucla.edu/blog/index.php/category/back-door-criterion/) method as the best one to identify the effect.  It also determines which features should be used for the estimation.  
 
 # COMMAND ----------
 
@@ -224,7 +224,7 @@ model_details = register_dowhy_model(
 # MAGIC %md
 # MAGIC ###Estimating the effect of "New Engagment Strategy" in "Revenue"
 # MAGIC
-# MAGIC Finally we will estimate the effect of the ```New Engagement Strategy``` incentive.  The graph obtain from the previous notebook displayed estated no effect on ```Revenue```.  We should see the same when identifying this effect and estimating it 
+# MAGIC Finally we will estimate the effect of the ```New Engagement Strategy``` incentive.  The graph obtained from the previous notebook displayed no effect on ```Revenue```.  We should see the same when identifying this effect and estimating it 
 
 # COMMAND ----------
 
@@ -253,9 +253,9 @@ new_strategy_effect_estimate.value
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC [DoWhy](https://github.com/py-why/dowhy) also find now effect.
+# MAGIC [DoWhy](https://github.com/py-why/dowhy) also finds no effect.
 # MAGIC
-# MAGIC Please notice [DoWhy](https://github.com/py-why/dowhy) decide not to use ```Plan Summit``` as a feature for the estimation.  If included, a spurious effect would be percived, leading us to wrong conclusions
+# MAGIC Please notice [DoWhy](https://github.com/py-why/dowhy) decides not to use ```Plan Summit``` as a feature for the estimation.  If included, a spurious effect would be percived, leading us to wrong conclusions
 
 # COMMAND ----------
 
@@ -287,4 +287,5 @@ compare_estimations_vs_ground_truth(ground_truth_df, estimates_df)
 
 # COMMAND ----------
 
-
+# MAGIC %md
+# MAGIC © 2023 Databricks, Inc. All rights reserved. The source in this notebook is provided subject to the Databricks License. All included or referenced third party libraries are subject to the licenses set forth below.

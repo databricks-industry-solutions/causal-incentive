@@ -6,33 +6,34 @@
 # MAGIC %md
 # MAGIC #Discovering the network of influences among the Features
 # MAGIC
-# MAGIC In order to isolate the influence we plan to estimate,  we need first to understand the relations among the available features.  We will use [PC algorithm](https://www.youtube.com/watch?v=o2A61bJ0UCw) implemented in the [PyWhy](https://www.pywhy.org/) package called [CausalLearn](https://github.com/py-why/causal-learn), to discover the basic skeleton of the network. Before generating the skeleton, it is possible to set some requirements on the graph. For example, we discussed in the previous notebook that ```Size``` affects ```IT Spend``` and ```Employee Count``` influences ```PC Count```. We will add these causal connections when we generate the graph.
+# MAGIC In order to isolate the influence we plan to estimate,  we need first to understand the relations among the available features.  We will use [PC algorithm](https://www.youtube.com/watch?v=o2A61bJ0UCw) implemented in the [PyWhy](https://www.pywhy.org/) package called [causal-learn](https://github.com/py-why/causal-learn), to discover the basic skeleton of the network. Before generating the skeleton, it is possible to set some requirements on the graph. For example, we discussed in the previous notebook that ```Size``` affects ```IT Spend``` and ```Employee Count``` influences ```PC Count```. We will add these causal connections when we generate the graph.
 
 # COMMAND ----------
 
-import causallearn
-from causallearn.search.ConstraintBased.PC import pc
-
-required_edges = [
-    {"from": "Size", "to": "IT Spend"},
-    {"from": "Employee Count", "to": "PC Count"},
-]
-
-# Get the background_knowledge parameter from the required edges defined above. 
-background_knowledge = add_background_knowledge(
-  edges = required_edges
-)
-
-# Parameters
-parameters = {"node_names": input_df.columns, 
-              "background_knowledge": background_knowledge, 
-              "alpha": 0.01, 
-              "indep_test": "fisherz"}
-
-cg = pc(data=np.vstack(input_df.to_numpy()), **parameters)
-
-# Visualization using pydot
-cg.draw_pydot_graph()
+# MAGIC %matplotlib inline
+# MAGIC import causallearn
+# MAGIC from causallearn.search.ConstraintBased.PC import pc
+# MAGIC
+# MAGIC required_edges = [
+# MAGIC     {"from": "Size", "to": "IT Spend"},
+# MAGIC     {"from": "Employee Count", "to": "PC Count"},
+# MAGIC ]
+# MAGIC
+# MAGIC # Get the background_knowledge parameter from the required edges defined above. 
+# MAGIC background_knowledge = add_background_knowledge(
+# MAGIC   edges = required_edges
+# MAGIC )
+# MAGIC
+# MAGIC # Parameters
+# MAGIC parameters = {"node_names": input_df.columns, 
+# MAGIC               "background_knowledge": background_knowledge, 
+# MAGIC               "alpha": 0.01, 
+# MAGIC               "indep_test": "fisherz"}
+# MAGIC
+# MAGIC cg = pc(data=np.vstack(input_df.to_numpy()), **parameters)
+# MAGIC
+# MAGIC # Visualization using pydot
+# MAGIC cg.draw_pydot_graph()
 
 # COMMAND ----------
 
@@ -146,7 +147,7 @@ cg.draw_pydot_graph()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC The network defined above,  also known as the Casual Graph, will guide the <b>identification</b> and <b>estimation</b> phases.  We will proceed to store it as an artifact in an MLFlow experiment run to then use it in the next step (the ```02_identification_estimation``` notebook).  
+# MAGIC The network defined above,  also known as the Causal Graph, will guide the <b>identification</b> and <b>estimation</b> phases.  We will proceed to store it as an artifact in an MLFlow experiment run to then use it in the next step (the ```02_identification_estimation``` notebook).  
 # MAGIC
 # MAGIC Please notice we are also storing in the [MLfLow](https://databricks.atlassian.net/wiki/spaces/UN/pages/2893873880/Brickstore) the algorithm used for the discovery, the parameters applied to the algorithm,  and all the alterations made to the discovered graph skeleton.
 
@@ -180,4 +181,5 @@ with mlflow.start_run(run_name="causal_discovery") as run:
 
 # COMMAND ----------
 
-
+# MAGIC %md
+# MAGIC © 2023 Databricks, Inc. All rights reserved. The source in this notebook is provided subject to the Databricks License. All included or referenced third party libraries are subject to the licenses set forth below.
