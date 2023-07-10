@@ -8,7 +8,7 @@
 # MAGIC Many companies offer their clients incentives to close deals, renew subscriptions, or purchase services.  These incentives carry costs that may not be recovered if it does not have the expected effect on the client.  In other words, the lack of a data driven incentive allocation policy would most probably result in a sub-optimal or even negative marginal profit.
 # MAGIC
 # MAGIC
-# MAGIC In this solution accelerator we will show how Casual ML (in particular packages in the PyWhy project) can be leveraged in Databricks to facilitate the development of an Incentive Recommender ML Model. This Recommender selects for each customer the incentive(s) that maximized profit, allowing you to get the biggest bang for your incentive bucks! 
+# MAGIC In this solution accelerator we will show how Causal ML (in particular packages in the PyWhy project) can be leveraged in Databricks to facilitate the development of an Incentive Recommender ML Model. This Recommender selects for each customer the incentive(s) that maximized profit, allowing you to get the biggest bang for your incentive bucks! 
 # MAGIC
 # MAGIC
 # MAGIC ##Why Causal ML?
@@ -23,11 +23,11 @@
 # MAGIC
 # MAGIC
 # MAGIC ##Why PyWhy?   
-# MAGIC [PyWhy](https://www.pywhy.org/) is an umbrella project offering several Casual ML packages that highly facilitate the tasks mentioned before.  The packages are very easy to use yet well grounded in sophisticated Causal ML theory.  This combination is helping PyWhy to rapidly become one of the most important Casual ML open source projects in the Python Ecosystem.   
+# MAGIC [PyWhy](https://www.pywhy.org/) is an umbrella project offering several Causal ML packages that highly facilitate the tasks mentioned before.  The packages are very easy to use yet well grounded in sophisticated Causal ML theory.  This combination is helping PyWhy to rapidly become one of the most important Causal ML open source projects in the Python Ecosystem.   
 # MAGIC
 # MAGIC
 # MAGIC ##Why Databricks Lakehouse?
-# MAGIC Databricks offers a great option for Causal ML projects development and management.  It provides a scalable unified platform scoping Data and AI.  Data needed to train models is readily available via [Delta Lakes](https://www.databricks.com/product/delta-lake-on-databricks) and Casual ML models can be easily managed and deployed using [MLflow](https://www.databricks.com/product/managed-mlflow).
+# MAGIC Databricks offers a great option for Causal ML projects development and management.  It provides a scalable unified platform scoping Data and AI.  Data needed to train models is readily available via [Delta Lakes](https://www.databricks.com/product/delta-lake-on-databricks) and Causal ML models can be easily managed and deployed using [MLflow](https://www.databricks.com/product/managed-mlflow).
 
 # COMMAND ----------
 
@@ -103,9 +103,10 @@ dbutils.data.summarize(input_df.astype(summarize_type_map), precise=True)
 
 # COMMAND ----------
 
-fig, ax = plt.subplots(1, len(treatment_cols), figsize=(12, 4), sharey=True)
-for i in range(len(treatment_cols)):
-    sns.boxplot(data=input_df, x=treatment_cols[i], y="Revenue", ax=ax[i]);
+# MAGIC %matplotlib inline
+# MAGIC fig, ax = plt.subplots(1, len(treatment_cols), figsize=(12, 4), sharey=True)
+# MAGIC for i in range(len(treatment_cols)):
+# MAGIC     sns.boxplot(data=input_df, x=treatment_cols[i], y="Revenue", ax=ax[i]);
 
 # COMMAND ----------
 
@@ -166,12 +167,17 @@ plot_policy(input_df, input_df.apply(assign_treatment_label, axis=1))
 # MAGIC The following steps are executed in order to develop a Personalized Incentive Recommender:
 # MAGIC
 # MAGIC
-# MAGIC 1. [Casual Discovery]($./01_causal_discovery):  this step focuses on discovering the network of influences existing among the available features and enriching based on domain knowledge.  Having a clear understanding of this network allows identifying the best approach for isolating the influence of each of the incentives in a customer.    
+# MAGIC 1. [Causal Discovery]($./01_causal_discovery):  this step focuses on discovering the network of influences existing among the available features and enriching based on domain knowledge.  Having a clear understanding of this network allows identifying the best approach for isolating the influence of each of the incentives in a customer.    
 # MAGIC
-# MAGIC 2. [Identification and Estimation]($./02_identification_estimation):  this step finds the best way of isolating each of the incentives influences using the network defined in the previous step.  The isolation method determines which features need to be controlled when estimate the influence. A Causal ML method for estimation called [Double Machine Learning](https://arxiv.org/abs/1608.00060) implmeneted at the [EconML package](https://econml.azurewebsites.net/spec/estimation/dml.html) is used to obtain an unbiased estimation.
+# MAGIC 2. [Identification and Estimation]($./02_identification_estimation):  this step finds the best way of isolating each of the incentives influences using the network defined in the previous step.  The isolation method determines which features need to be controlled when estimate the influence. A Causal ML method for estimation called [Double Machine Learning](https://arxiv.org/abs/1608.00060) implemented at the [EconML package](https://econml.azurewebsites.net/spec/estimation/dml.html) is used to obtain an unbiased estimation.
 # MAGIC
 # MAGIC 3. [Personalized Incentive Recommender]($./03_incentive_recommender):  armed with the Causal ML influence estimators trained in the previous step, a composite model is developed to recommend the incentive or combination of incentives returning the highest profit based on basic characteristics of the customer.
 # MAGIC
 # MAGIC 4. [Tests (Model Refutation)]($./04_refutation): in order to have a good level of confidence in a developed estimators,  different tests are applied.  The tests mainly consist in gradually injecting noise or distorting the dataset to capture the point in which the estimator is no longer valid.
 # MAGIC
 # MAGIC Important:  Please execute the “RUNME” notebook to prepare your Databricks environment for the notebooks mentioned above.  The “RUNME” notebook will create a new Databricks Workflow pointing to each of the notebook,  create a new job cluster to execute the workflow, and  Install all the dependency libraries.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC © 2023 Databricks, Inc. All rights reserved. The source in this notebook is provided subject to the Databricks License. All included or referenced third party libraries are subject to the licenses set forth below.

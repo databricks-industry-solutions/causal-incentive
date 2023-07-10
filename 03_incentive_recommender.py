@@ -74,7 +74,7 @@ class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
 # MAGIC
 # MAGIC We will instantiate the composite model for personalized incentive recommendation. Note that we are passing on only two models for the treatment effect estimation: i.e. ```tech_support_total_effect_dowhy_model``` and ```discount_dowhy_model```, althought we were intially interested in measuring the effect of ```New Engagement Strategy``` as well. This is because we found in the previous notebook that this treatment has no effect on ```Revenue```.
 # MAGIC
-# MAGIC After we instantiate the model, we will log it in MLflow together with some other important information like model signiture and dependencies. Eventually this model will get registered under the model name ```personalized_policy_recommender```.
+# MAGIC After we instantiate the model, we will log it in MLflow together with some other important information like model signature and dependencies. Eventually this model will get registered under the model name ```personalized_policy_recommender```.
 
 # COMMAND ----------
 
@@ -161,9 +161,10 @@ compare_policies_effects(final_df)
 
 # COMMAND ----------
 
-# Plot the recommended policy of each customer
-plt.figure(figsize=(10, 7.5))
-plot_policy(final_df, final_df["recommended incentive"])
+# MAGIC %matplotlib inline
+# MAGIC # Plot the recommended policy of each customer
+# MAGIC plt.figure(figsize=(10, 7.5))
+# MAGIC plot_policy(final_df, final_df["recommended incentive"])
 
 # COMMAND ----------
 
@@ -172,4 +173,5 @@ plot_policy(final_df, final_df["recommended incentive"])
 
 # COMMAND ----------
 
-
+# MAGIC %md
+# MAGIC © 2023 Databricks, Inc. All rights reserved. The source in this notebook is provided subject to the Databricks License. All included or referenced third party libraries are subject to the licenses set forth below.
