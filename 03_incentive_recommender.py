@@ -34,7 +34,7 @@ class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
         effects_interaction = (
             " and ".join(self.models_dictionary.keys()) + " net effect"
         )
-        estimated_effects[effects_interaction] = estimated_effects.sum(axis=1)
+        estimated_effects[effects_interaction] = estimated_effects.sum(axis=1, numeric_only=True)
         return estimated_effects
 
     def _cost_fn_interaction(self, data):
@@ -53,7 +53,7 @@ class PersonalizedIncentiveRecommender(mlflow.pyfunc.PythonModel):
         net_effects["recommended incentive"] = net_effects.idxmax(axis=1).apply(
             lambda x: x.replace(" net effect", "")
         )
-        net_effects["recommended incentive net effect"] = net_effects.max(axis=1)
+        net_effects["recommended incentive net effect"] = net_effects.max(axis=1, numeric_only=True)
         return net_effects
 
     def predict(self, context, model_input):
@@ -170,6 +170,35 @@ compare_policies_effects(final_df)
 
 # MAGIC %md
 # MAGIC This modeling technique (DML) lets us estimate the isolated effect of a given incentive while controlling for confounders. We can obtain an unbiased estimate for each treatment, which is something hard to achieve using traditional ML techniques.
+# MAGIC
+# MAGIC The recommender can be used to obtain the optimal incetive for new accounts given the accounts characteristics.  For example assuming the first of the rows in the "input_df" belong to a new account just onboarded, the sales team can obtain a recommednation of which incentives to offer:
+
+# COMMAND ----------
+
+new_account = input_df.head(1)
+new_account
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ####Obtain Incentives Recommeded for New Account
+
+# COMMAND ----------
+
+incentive_recommended = loaded_model.predict(new_account)
+
+displayHTML(
+    f"<H2>Recommended incentive(s) for new account:</h2><h2>- {incentive_recommended[['recommended incentive']].values[0][0].capitalize()}</H2>"
+)
+
+# COMMAND ----------
+
+incentive_recommended[["recommended incentive"]].values[0][0]
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC MLflow allows leveraging the recommender in [batch processing](https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html#mlflow.pyfunc.spark_udf) or as a REST API via [Databricks model serving](https://docs.databricks.com/machine-learning/model-serving/index.html). 
 
 # COMMAND ----------
 
