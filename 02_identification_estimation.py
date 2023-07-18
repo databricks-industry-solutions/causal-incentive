@@ -20,7 +20,7 @@ graph = load_graph_from_latest_mlflow_run(experiment_name)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We will now identify the total effect of ```Tech Support``` in ```Revenue``` using [DoWhy](https://github.com/py-why/dowhy) to obtain the <b>Average Treatement Effect (ATE)</b> estimand.
+# MAGIC We will now identify the total effect of ```Tech Support``` in ```Revenue``` using [DoWhy](https://github.com/py-why/dowhy) to obtain the <b>[Average Treatement Effect (ATE)](https://en.wikipedia.org/wiki/Average_treatment_effect)</b> estimand. In other words,  we will isolate the average influence ``Tech Support`` had over the ``Revenue`` of accounts.
 
 # COMMAND ----------
 
@@ -50,7 +50,7 @@ print(tech_support_total_effect_identified_estimand)
 # MAGIC %md
 # MAGIC ###Estimating "Tech Support" total effect on "Revenue"
 # MAGIC
-# MAGIC In order to obtain an unbias estimation we will use an approach call [Double Machine Learning (DML)](https://academic.oup.com/ectj/article/21/1/C1/5056401)  which is implemented in the [PyWhy](https://github.com/py-why) package [EconML](https://github.com/py-why/EconML). We use a logistic regression model for predicting the treatment and lasso for predicting the outcome.
+# MAGIC In order to obtain an unbias estimation we will use an approach call [Double Machine Learning (DML)](https://academic.oup.com/ectj/article/21/1/C1/5056401)  which is implemented in the [PyWhy](https://github.com/py-why) package [EconML](https://github.com/py-why/EconML). We use a [logistic regression](https://en.wikipedia.org/wiki/Logistic_regression) model for estimating if the incentive was given and a [lasso regression](https://en.wikipedia.org/wiki/Lasso_(statistics) model for estimating the ``Revenue`` of the account.
 
 # COMMAND ----------
 
@@ -284,6 +284,15 @@ estimates_df = pd.DataFrame(
 )
 
 compare_estimations_vs_ground_truth(ground_truth_df, estimates_df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC As we can see, the estimations of the models are not only directioanlly correct but very closed the the actual values used in the simulations:
+# MAGIC - ``Tech Support`` direct influence is only off by around $12 
+# MAGIC - ``Tech Support`` accounting for the direct and indirect influences is only off by around $110
+# MAGIC - ``Discount`` direct influence is only off by $4
+# MAGIC - ``New Strategy`` has no influence in ``Revenue``
 
 # COMMAND ----------
 

@@ -8,7 +8,7 @@
 # MAGIC Many companies offer their clients incentives to close deals, renew subscriptions, or purchase services.  These incentives carry costs that may not be recovered if it does not have the expected effect on the client.  In other words, the lack of a data driven incentive allocation policy would most probably result in a sub-optimal or even negative marginal profit.
 # MAGIC
 # MAGIC
-# MAGIC In this solution accelerator we will show how Causal ML (in particular packages in the PyWhy project) can be leveraged in Databricks to facilitate the development of an Incentive Recommender ML Model. This Recommender selects for each customer the incentive(s) that maximized profit, allowing you to get the biggest bang for your incentive bucks! 
+# MAGIC In this solution accelerator we will show how Causal ML (in particular packages in the PyWhy project) can be leveraged in Databricks to facilitate the development of an Incentive Recommender ML Model. This Recommender can be leverage during new account on-boardings to select the incentive(s) that maximized profit from the new client. 
 # MAGIC
 # MAGIC
 # MAGIC ##Why Causal ML?
@@ -84,10 +84,12 @@
 
 # COMMAND ----------
 
+# DBTITLE 1,Loading helper functions
 # MAGIC %run ./util/notebook-config
 
 # COMMAND ----------
 
+# DBTITLE 1,Obtaining summary statistics of the dataset
 # Adjust the types of the input_df for exploratory analysis in the rest of the notebook
 input_df = input_df.astype(normal_type_map)
 
@@ -97,12 +99,33 @@ dbutils.data.summarize(input_df.astype(summarize_type_map), precise=True)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC The data profile gives us a lot of information. From it we can see we have 5 numerical columns including our target revenue, with the rest as binary categorical columns. We can also see that there is no missing data, and see which categoricals are balanced vs not. The distribution of our numerical columns is also visible at a glance, along with the summary statistics. Finally, there are exactly 10k rows and no missing values. All in all, its pretty easy to observe that this appears to be a very clean synthetic dataset, which is of course the case.
+# MAGIC The data profile gives us a lot of information. From it we can see we have 5 numerical columns including our target revenue:
+# MAGIC - IT Spend
+# MAGIC - Employee Count
+# MAGIC - PC Count
+# MAGIC - Size
+# MAGIC - Revenue
 # MAGIC
-# MAGIC We can also check the impact of each individual treatment on revenue to see which has an impact at the top level.
+# MAGIC The rest of the columns are binary categorical columns, including the three incentives:
+# MAGIC - Global Flag
+# MAGIC - Major Flag
+# MAGIC - SMC Flag
+# MAGIC - Commercial Flag
+# MAGIC - Planning Summit
+# MAGIC - New Product Adoption
+# MAGIC
+# MAGIC Incentives:
+# MAGIC - Tech Support
+# MAGIC - Discount
+# MAGIC - New Engagement Strategy 
+# MAGIC  
+# MAGIC  We can also see that there is no missing data, and see which categoricals are balanced vs not. The distribution of our numerical columns is also visible at a glance, along with the summary statistics. Finally, there are exactly 10k rows. All in all, its pretty easy to observe that this appears to be a very clean synthetic dataset, which is of course the case.
+# MAGIC
+# MAGIC We can also check the impact of each individual incentive on revenue to see which has an impact at the top level.
 
 # COMMAND ----------
 
+# DBTITLE 1,Display a box plot of each incentive vs Revenue (1 = incentive was provided)
 # MAGIC %matplotlib inline
 # MAGIC fig, ax = plt.subplots(1, len(treatment_cols), figsize=(12, 4), sharey=True)
 # MAGIC for i in range(len(treatment_cols)):
@@ -117,6 +140,7 @@ dbutils.data.summarize(input_df.astype(summarize_type_map), precise=True)
 
 # COMMAND ----------
 
+# DBTITLE 1,Checking correlations among the distributions of the numerical features
 sns.pairplot(input_df);
 
 # COMMAND ----------
@@ -128,6 +152,7 @@ sns.pairplot(input_df);
 
 # COMMAND ----------
 
+# DBTITLE 1,Displaying box plots for numerical features vs Revenue
 fig, ax = plt.subplots(len(numerical_cols), len(treatment_cols), figsize=(12, 15), sharey="row")
 for i in range(len(numerical_cols)):
     for j in range(len(treatment_cols)):
@@ -148,6 +173,7 @@ for i in range(len(numerical_cols)):
 
 # COMMAND ----------
 
+# DBTITLE 1,Displaying customer "PC count" vs "Size" vs Incentive provided 
 # Plot the current policy of each customer
 plt.figure(figsize=(10, 7.5))
 plot_policy(input_df, input_df.apply(assign_treatment_label, axis=1))
@@ -155,9 +181,9 @@ plot_policy(input_df, input_df.apply(assign_treatment_label, axis=1))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC The scatter plot shows that there seems to be no clear guidance on which customer to receive which treatment. Indeed, this simulation assumes no allocation policy, which results in allocation depending solely on the sales teams' decisions and are not consistent. Most probably, this lead to a sub-optimal return.
+# MAGIC The scatter plot displays the account ``pc count`` vs account ``size`` vs ``incentive provided``.  It shows no clear policy was used when assigning an incentive. Indeed, this simulation assumes no allocation policy, which results in allocation depending solely on inconsistant sales teams' decisions. Most probably, this lead to a sub-optimal return.
 # MAGIC
-# MAGIC Now that we have a more intuitive feel for the data and have done some initial analysis and confirmed the quality of our synthetic dataset, lets continue with the demonstration and go beyond correlations to see if we can infer causation among these attributes. In particular, we'll see how to both identify causal relationships and confounders as well as estimate the effects, and then use that information to recommend a personalized incentive structure based on what we know about the accounts. At the end, we'll also demonstrate advanced techniques to ensure we're unable to refute our developed estimators.
+# MAGIC <b>The next notebooks develop an ``Personalized Incentive Recommender`` model to infers the optimal allocation policy based on Causal ML</b>
 
 # COMMAND ----------
 
