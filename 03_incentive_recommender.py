@@ -100,7 +100,7 @@ with mlflow.start_run(run_name=f"{model_name}_run") as experiment_run:
         artifact_path="model",
         python_model=personalizedIncentiveRecommender,
         signature=infer_signature(
-            input_df, personalizedIncentiveRecommender.predict({}, input_df)
+            input_df.drop(["Tech Support", "Discount", "New Engagement Strategy"], axis=1), personalizedIncentiveRecommender.predict({}, input_df)
         ),
     )
 
@@ -140,6 +140,10 @@ display(final_df)
 
 # COMMAND ----------
 
+
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ###Comparing Policies
 # MAGIC
@@ -147,7 +151,16 @@ display(final_df)
 
 # COMMAND ----------
 
-compare_policies_effects(final_df)
+final_df
+
+# COMMAND ----------
+
+all_policies_df = final_df.merge(input_df)
+
+##Adding the previous year "no policy" scenario
+all_policies_df["no policy"] = (all_policies_df["Tech Support"]*all_policies_df["tech support net effect"]) + (all_policies_df["Discount"]*all_policies_df["discount net effect"])
+
+compare_policies_effects(all_policies_df)
 
 # COMMAND ----------
 
@@ -175,7 +188,7 @@ compare_policies_effects(final_df)
 
 # COMMAND ----------
 
-new_account = input_df.head(1)
+new_account = input_df.head(1).drop(["Tech Support", "Discount", "New Engagement Strategy"], axis=1)
 new_account
 
 # COMMAND ----------
@@ -190,10 +203,6 @@ incentive_recommended = loaded_model.predict(new_account)
 displayHTML(
     f"<H2>Recommended incentive(s) for new account:</h2><h2>- {incentive_recommended[['recommended incentive']].values[0][0].capitalize()}</H2>"
 )
-
-# COMMAND ----------
-
-incentive_recommended[["recommended incentive"]].values[0][0]
 
 # COMMAND ----------
 

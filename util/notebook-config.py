@@ -303,6 +303,7 @@ def compare_policies_effects(final_df):
                 "tech support and discount net effect",
                 "no incentive net effect",
                 "recommended incentive net effect",
+                "no policy"
             ]
         ].mean()
     ).T
@@ -313,10 +314,11 @@ def compare_policies_effects(final_df):
         "Always giving 'tech support' and 'discount'",
         "Giving no incentive",
         "Giving recommended incentive",
+        "No Policy"
     ]
     average_effect_recommended_incentive_df = average_effect_recommended_incentive_df.T
     average_effect_recommended_incentive_df.columns = [
-        "Average net dollar return per account"
+        "Average marginal profit per account"
     ]
     return average_effect_recommended_incentive_df
 

@@ -5,10 +5,10 @@
 # MAGIC # Building an Incentive Recommender using Causal ML
 # MAGIC
 # MAGIC
-# MAGIC Many companies offer their clients incentives to close deals, renew subscriptions, or purchase services.  These incentives carry costs that may not be recovered if it does not have the expected effect on the client.  In other words, the lack of a data driven incentive allocation policy would most probably result in a sub-optimal or even negative marginal profit.
+# MAGIC Many companies offer their clients incentives to close deals, renew subscriptions, or purchase services.  These incentives carry costs that may not be recovered if they do not have the expected effects on the client.  In other words, the lack of a data driven incentive allocation policy would most probably result in a sub-optimal or even negative marginal profit.
 # MAGIC
 # MAGIC
-# MAGIC In this solution accelerator we will show how Causal ML (in particular packages in the PyWhy project) can be leveraged in Databricks to facilitate the development of an Incentive Recommender ML Model. This Recommender can be leverage during new account on-boardings to select the incentive(s) that maximized profit from the new client. 
+# MAGIC In this solution accelerator we will show how Causal ML (in particular packages in the PyWhy project) can be leveraged in Databricks to facilitate the development of an Incentive Recommender ML Model. This Recommender can be leverage during new account on-boardings to select the incentive(s) that maximized profit from a new client. 
 # MAGIC
 # MAGIC
 # MAGIC ##Why Causal ML?
