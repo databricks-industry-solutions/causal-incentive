@@ -226,3 +226,9 @@ refutation_df
 
 # MAGIC %md
 # MAGIC © 2023 Databricks, Inc. All rights reserved. The source in this notebook is provided subject to the Databricks License. All included or referenced third party libraries are subject to the licenses set forth below.
+# MAGIC
+# MAGIC | library                                | description             | license    | source                                              |
+# MAGIC |----------------------------------------|-------------------------|------------|-----------------------------------------------------|
+# MAGIC | dowhy   | Python library for causal inference that supports explicit modeling and testing of causal assumptions | MIT   | https://pypi.org/project/dowhy/          
+# MAGIC | econml   |  contains several methods for calculating Conditional Average Treatment Effects | MIT    | https://pypi.org/project/econml/  
+# MAGIC | causal-learn   | python package for causal discovery  | MIT    | https://pypi.org/project/causal-learn/          
