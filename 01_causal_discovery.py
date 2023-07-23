@@ -122,7 +122,7 @@ cg.draw_pydot_graph()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Finally, even thought there was no incentive assignation policy, we believe the basic characteristics of the company had an influence in the assignation.  We will add a directed relation from each of these characteristics to each of the incentives 
+# MAGIC Finally, even thought there was no incentive assignation policy, we believe the basic characteristics of the company had an influence in the assignation.  We will add a directed relation from each of these characteristics to each of the promotional offers 
 
 # COMMAND ----------
 
