@@ -9,7 +9,7 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC We will use the causal graph obtained from the previous step to guide the identification step.  In this step the best method to isolate the effect of a given incentive on ```Revenue``` is identified.  The package DoWhy automates this step by relying on the well established [Do-Calculus](https://ftp.cs.ucla.edu/pub/stat_ser/r402.pdf) theoretical framework.
+# MAGIC We will use the causal graph obtained from the previous step to guide the identification step.  In this step the best method to isolate the effect of a given promotional offer on ```Revenue``` is identified.  The package DoWhy automates this step by relying on the well established [Do-Calculus](https://ftp.cs.ucla.edu/pub/stat_ser/r402.pdf) theoretical framework.
 # MAGIC
 # MAGIC First, let's load the graph from [MLflow](https://www.databricks.com/product/managed-mlflow).
 
@@ -50,7 +50,7 @@ print(tech_support_total_effect_identified_estimand)
 # MAGIC %md
 # MAGIC ###Estimating "Tech Support" total effect on "Revenue"
 # MAGIC
-# MAGIC In order to obtain an unbias estimation we will use an approach call [Double Machine Learning (DML)](https://academic.oup.com/ectj/article/21/1/C1/5056401)  which is implemented in the [PyWhy](https://github.com/py-why) package [EconML](https://github.com/py-why/EconML). We use a [logistic regression](https://en.wikipedia.org/wiki/Logistic_regression) model for estimating if the incentive was given and a [lasso regression](https://en.wikipedia.org/wiki/Lasso_(statistics) model for estimating the ``Revenue`` of the account.
+# MAGIC In order to obtain an unbias estimation we will use an approach call [Double Machine Learning (DML)](https://academic.oup.com/ectj/article/21/1/C1/5056401)  which is implemented in the [PyWhy](https://github.com/py-why) package [EconML](https://github.com/py-why/EconML). We use a [logistic regression](https://en.wikipedia.org/wiki/Logistic_regression) model for estimating if the promotional offer was given and a [lasso regression](https://en.wikipedia.org/wiki/Lasso_(statistics) model for estimating the ``Revenue`` of the account.
 
 # COMMAND ----------
 
@@ -106,7 +106,7 @@ model_details = register_dowhy_model(
 # MAGIC %md
 # MAGIC ###Estimating "Tech Support" direct effect on "Revenue"
 # MAGIC
-# MAGIC In the graph obtained from the previous notebook we can appricate ```Tech Support``` has a direct effect on ```Revenue``` and a mediated effect through ```New Product Adoption```.  In other words,  ```Tech Support``` besides directly influencing ```Revenue```, also impacts ```New Product Adoption``` which itself has an effect on ```Revenue```.  The estimation done in the commands above covered the total influence on this incentive (direct and indirect).  We will now identify the direct influence only by using the [Control Direct Effect (CDE)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4193506/) estimand type of DoWhy 
+# MAGIC In the graph obtained from the previous notebook we can appricate ```Tech Support``` has a direct effect on ```Revenue``` and a mediated effect through ```New Product Adoption```.  In other words,  ```Tech Support``` besides directly influencing ```Revenue```, also impacts ```New Product Adoption``` which itself has an effect on ```Revenue```.  The estimation done in the commands above covered the total influence on this promotional offer (direct and indirect).  We will now identify the direct influence only by using the [Control Direct Effect (CDE)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4193506/) estimand type of DoWhy 
 
 # COMMAND ----------
 

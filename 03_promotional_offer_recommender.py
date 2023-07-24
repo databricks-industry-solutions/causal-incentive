@@ -4,9 +4,9 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Individualized Incentive Recommendations
+# MAGIC #### Individualized Promotional Offer Recommendations
 # MAGIC
-# MAGIC Armed with the models trained in the previous step,  we can develop a composite model that estimates the effects of each incentive on new companies based on their specific characteristics.  The model will select the incentive or combination of incentives with the highest effect on ```Revenue``` after accounting for the cost of the incentive. In the following cell, we define this composite model using MLflow's custom python model.
+# MAGIC Armed with the models trained in the previous step,  we can develop a composite model that estimates the effects of each incentive on new companies based on their specific characteristics.  The model will select the promotional offer(s) with the highest effect on ```Revenue``` after accounting for the cost of the offer. In the following cell, we define this composite model using MLflow's custom python model.
 
 # COMMAND ----------
 
@@ -194,7 +194,7 @@ new_account
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ####Obtain Incentives Recommeded for New Account
+# MAGIC ####Obtain Promotinal Offer(s) Recommedation for New Account
 
 # COMMAND ----------
 
