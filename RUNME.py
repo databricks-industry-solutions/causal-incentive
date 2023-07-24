@@ -34,6 +34,14 @@ nsc = NotebookSolutionCompanion()
 
 # COMMAND ----------
 
+# DBTITLE 1,Write init script if notebook is run from DBC download
+with open("causal_init.sh", "w") as f:
+  f.write('''#!/bin/bash
+sudo apt-get -qq update
+sudo apt-get -y -qq install graphviz libgraphviz-dev''')
+
+# COMMAND ----------
+
 job_json = {
         "timeout_seconds": 28800,
         "max_concurrent_runs": 1,
