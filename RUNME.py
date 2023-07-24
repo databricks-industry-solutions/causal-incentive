@@ -25,10 +25,12 @@
 
 # DBTITLE 0,Install util packages
 # MAGIC %pip install git+https://github.com/databricks-academy/dbacademy@v1.0.13 git+https://github.com/databricks-industry-solutions/notebook-solution-companion@safe-print-html --quiet --disable-pip-version-check
+# MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
 
 from solacc.companion import NotebookSolutionCompanion
+nsc = NotebookSolutionCompanion()
 
 # COMMAND ----------
 
@@ -155,9 +157,9 @@ job_json = {
             {
                 "job_cluster_key": "causal_cluster",
                 "notebook_task": {
-                    "notebook_path": f"03_incentive_recommender"
+                    "notebook_path": f"03_promotional_offer_recommender"
                 },
-                "task_key": "03_incentive_recommender",
+                "task_key": "03_promotional_offer_recommender",
                 "depends_on": [
                     {
                         "task_key": "02_identification_estimation"
@@ -199,7 +201,7 @@ job_json = {
                 "task_key": "04_refute",
                 "depends_on": [
                     {
-                        "task_key": "03_incentive_recommender"
+                        "task_key": "03_promotional_offer_recommender"
                     }
                 ],
                 "libraries": [
@@ -244,8 +246,8 @@ job_json = {
                     "node_type_id": {"AWS": "i3.8xlarge", "MSA": "Standard_E32_v3", "GCP": "n1-highmem-32"},
                     "init_scripts": [
                         {
-                            "dbfs": {
-                                "destination": "dbfs:/databricks/scripts/causal_init.sh"
+                            "workspace": {
+                                "destination": f"{nsc.solacc_path}/causal_init.sh"
                             }
                         }
                     ]
@@ -256,27 +258,14 @@ job_json = {
 
 # COMMAND ----------
 
-# DBTITLE 1,Write init file into a DBFS location
-# make folder to house init script
-dbutils.fs.mkdirs('dbfs:/databricks/scripts')
-
-# write init script
-dbutils.fs.put(
-  '/databricks/scripts/causal_init.sh',
-  '''
-#!/bin/bash
-sudo apt-get -qq update
-sudo apt-get -y -qq install graphviz libgraphviz-dev''', True
-)
-
-
-# COMMAND ----------
-
 # DBTITLE 1,Deploy job and cluster
 dbutils.widgets.dropdown("run_job", "False", ["True", "False"])
 run_job = dbutils.widgets.get("run_job") == "True"
-nsc = NotebookSolutionCompanion()
 nsc.deploy_compute(job_json, run_job=run_job)
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
