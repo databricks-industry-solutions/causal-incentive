@@ -34,14 +34,6 @@ nsc = NotebookSolutionCompanion()
 
 # COMMAND ----------
 
-# DBTITLE 1,Write init script if notebook is run from DBC download
-# with open("causal_init.sh", "w") as f:
-#   f.write('''#!/bin/bash
-# sudo apt-get -qq update
-# sudo apt-get -y -qq install graphviz libgraphviz-dev''')
-
-# COMMAND ----------
-
 job_json = {
         "timeout_seconds": 28800,
         "max_concurrent_runs": 1,
@@ -270,11 +262,3 @@ job_json = {
 dbutils.widgets.dropdown("run_job", "False", ["True", "False"])
 run_job = dbutils.widgets.get("run_job") == "True"
 nsc.deploy_compute(job_json, run_job=run_job)
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
