@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %md This solution accelerator notebook is available at https://github.com/databricks-industry-solutions/causal-incentive.
+
+# COMMAND ----------
+
 # MAGIC %run ./util/notebook-config
 
 # COMMAND ----------
