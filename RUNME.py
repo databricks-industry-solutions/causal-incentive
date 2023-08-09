@@ -66,7 +66,7 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "dowhy==0.10" 
                       }
                   },
                   {
@@ -105,7 +105,7 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "dowhy==0.10" 
                       }
                   },
                   {
@@ -144,7 +144,7 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "dowhy==0.10" 
                       }
                   },
                   {
@@ -183,7 +183,7 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "dowhy==0.10" 
                       }
                   },
                   {
@@ -222,7 +222,7 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "dowhy==0.10" 
                       }
                   },
                   {
