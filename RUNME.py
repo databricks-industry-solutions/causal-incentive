@@ -66,7 +66,7 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "dowhy==0.10" 
                       }
                   },
                   {
@@ -105,7 +105,7 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "dowhy==0.10" 
                       }
                   },
                   {
@@ -144,7 +144,7 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "dowhy==0.10" 
                       }
                   },
                   {
@@ -183,7 +183,7 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "dowhy==0.10" 
                       }
                   },
                   {
@@ -222,7 +222,7 @@ job_json = {
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.9.1" 
+                          "package": "dowhy==0.10" 
                       }
                   },
                   {
@@ -237,7 +237,7 @@ job_json = {
             {
                 "job_cluster_key": "causal_cluster",
                 "new_cluster": {
-                    "spark_version": "12.2.x-cpu-ml-scala2.12",
+                    "spark_version": "13.3.x-cpu-ml-scala2.12",
                     "num_workers": 0,
                     "spark_conf": {
                         "spark.master": "local[*, 4]",
