@@ -19,6 +19,22 @@ filterwarnings("ignore", "iteritems is deprecated")
 
 # COMMAND ----------
 
+# Create catalog if it doesn't exist
+catalog = "causal_solacc"
+create_catalog_query = f"CREATE CATALOG IF NOT EXISTS {catalog}"
+use_catalog_query = f"USE CATALOG {catalog}"
+
+# Create database with the user's name if it doesn't exist
+email = spark.sql('select current_user() as user').collect()[0]['user']
+db = email.split('@')[0].replace('.', '_')
+create_db_query = f"CREATE SCHEMA IF NOT EXISTS {catalog}.{db}"
+
+_ = spark.sql(create_catalog_query)
+_ = spark.sql(use_catalog_query)
+_ = spark.sql(create_db_query)
+
+# COMMAND ----------
+
 # Utility methods for manipulating and serializing the causal graph.
 
 
@@ -176,6 +192,8 @@ def setup_treatment_and_out_models():
 
 
 from pip._vendor import pkg_resources
+from mlflow.models.signature import ModelSignature
+from mlflow.types import DataType, Schema, TensorSpec, ColSpec
 
 
 def get_version(package):
@@ -225,7 +243,10 @@ def get_model_env():
 
 def register_dowhy_model(model_name, model, estimand, estimate):
     """Register a DoWhy model in MLflow."""
-
+    # Define a dummy input and output schema for the model signature
+    input_schema = Schema([ColSpec("double")])
+    output_schema = Schema([ColSpec("double")])
+    signature = ModelSignature(inputs=input_schema, outputs=output_schema)
     with mlflow.start_run(run_name=f"{model_name} run") as run:
         model_info = mlflow.pyfunc.log_model(
             artifact_path="model",
@@ -234,27 +255,31 @@ def register_dowhy_model(model_name, model, estimand, estimate):
                 estimand=estimand,
                 estimate=estimate,
             ),
+            registered_model_name=model_name,
+            signature=signature,
             conda_env=get_model_env(),
         )
+    return model_info
 
-    return mlflow.register_model(
-        model_uri=f"runs:/{run.info.run_id}/model", name=model_name
-    )
+
+# Function to get the latest version of a registered model
+def get_latest_model_version(client, model_name):
+    latest_version = 1  # Initialize the latest version to 1
+    # Iterate through all model versions for the given registered model name
+    for mv in client.search_model_versions(f"name='{model_name}'"):
+        version_int = int(mv.version)  # Convert version string to integer
+        # Update the latest version if a higher version is found
+        if version_int > latest_version:
+            latest_version = version_int
+    return latest_version  # Return the latest version number
 
 
 def get_registered_wrapped_model(model_name):
     client = mlflow.MlflowClient()
-    latest_model_versions = client.get_latest_versions(name=model_name)
-
-    if len(latest_model_versions) > 0:
-        latest_model_version = latest_model_versions[0].version
-    else:
-        raise Exception(f"There are no registered versions for model {model_name}")
-
+    latest_model_version = get_latest_model_version(client, model_name)
     wrapped_model = mlflow.pyfunc.load_model(
         f"models:/{model_name}/{latest_model_version}"
     )
-
     return wrapped_model.unwrap_python_model()
 
 
