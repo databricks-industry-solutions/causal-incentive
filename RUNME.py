@@ -51,11 +51,6 @@ job_json = {
                 "libraries": [
                   {
                       "pypi": {
-                          "package": "pygraphviz==1.10" 
-                      }
-                  },
-                  {
-                      "pypi": {
                           "package": "networkx==2.8.8" 
                       }
                   },
@@ -88,11 +83,6 @@ job_json = {
                     }
                 ],
                 "libraries": [
-                  {
-                      "pypi": {
-                          "package": "pygraphviz==1.10" 
-                      }
-                  },
                   {
                       "pypi": {
                           "package": "networkx==2.8.8" 
@@ -129,11 +119,6 @@ job_json = {
                 "libraries": [
                   {
                       "pypi": {
-                          "package": "pygraphviz==1.10" 
-                      }
-                  },
-                  {
-                      "pypi": {
                           "package": "networkx==2.8.8" 
                       }
                   },
@@ -166,11 +151,6 @@ job_json = {
                     }
                 ],
                 "libraries": [
-                  {
-                      "pypi": {
-                          "package": "pygraphviz==1.10" 
-                      }
-                  },
                   {
                       "pypi": {
                           "package": "networkx==2.8.8" 
@@ -207,11 +187,6 @@ job_json = {
                 "libraries": [
                   {
                       "pypi": {
-                          "package": "pygraphviz==1.10" 
-                      }
-                  },
-                  {
-                      "pypi": {
                           "package": "networkx==2.8.8" 
                       }
                   },
@@ -237,20 +212,17 @@ job_json = {
             {
                 "job_cluster_key": "causal_cluster",
                 "new_cluster": {
-                    "spark_version": "13.3.x-cpu-ml-scala2.12",
+                    "spark_version": "14.3.x-cpu-ml-scala2.12",
                     "num_workers": 0,
                     "spark_conf": {
                         "spark.master": "local[*, 4]",
                         "spark.databricks.cluster.profile": "singleNode"
                     },
+                    "custom_tags": {
+                        "ResourceClass": "SingleNode"
+                    },
                     "node_type_id": {"AWS": "i3.8xlarge", "MSA": "Standard_E32_v3", "GCP": "n1-highmem-32"},
-                    "init_scripts": [
-                        {
-                            "workspace": {
-                                "destination": f"{nsc.solacc_path}/causal_init.sh"
-                            }
-                        }
-                    ]
+                    "data_security_mode": "SINGLE_USER",
                 }
             }
         ]
@@ -260,5 +232,9 @@ job_json = {
 
 # DBTITLE 1,Deploy job and cluster
 dbutils.widgets.dropdown("run_job", "False", ["True", "False"])
-run_job = dbutils.widgets.get("run_job") == "True"
+run_job = dbutils.widgets.get("run_job") == "False"
 nsc.deploy_compute(job_json, run_job=run_job)
+
+# COMMAND ----------
+
+
