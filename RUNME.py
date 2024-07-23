@@ -232,7 +232,7 @@ job_json = {
 
 # DBTITLE 1,Deploy job and cluster
 dbutils.widgets.dropdown("run_job", "False", ["True", "False"])
-run_job = dbutils.widgets.get("run_job") == "True"
+run_job = dbutils.widgets.get("run_job") == "False"
 nsc.deploy_compute(job_json, run_job=run_job)
 
 # COMMAND ----------
