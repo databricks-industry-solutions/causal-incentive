@@ -17,6 +17,8 @@ filterwarnings("ignore", "iteritems is deprecated")
 %matplotlib inline
 %config InlineBackend.figure_format = "retina"
 
+mlflow.set_registry_uri("databricks-uc")
+
 # COMMAND ----------
 
 # Create catalog if it doesn't exist
