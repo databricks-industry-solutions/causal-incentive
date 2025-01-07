@@ -1,5 +1,3 @@
-%md 
-
 <img src='https://github.com/databricks-industry-solutions/.github/raw/main/profile/solacc_logo_wide.png' width="1000" ></img>
 # Building an Incentive Recommender using Causal ML
 
