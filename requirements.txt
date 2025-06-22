@@ -1,4 +1,4 @@
 networkx==2.8.8
 causal-learn==0.1.3
-dowhy==0.10
+dowhy==0.12
 econml==0.14.0
