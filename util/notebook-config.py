@@ -10,6 +10,7 @@ import functools
 import econml
 import dowhy
 import sklearn
+from scipy.special import expit, logit
 
 from warnings import filterwarnings
 filterwarnings("ignore", "iteritems is deprecated")
@@ -38,8 +39,6 @@ _ = spark.sql(create_db_query)
 # COMMAND ----------
 
 # Utility methods for manipulating and serializing the causal graph.
-
-
 import pydot
 from causallearn.graph.Edge import Edge
 from causallearn.graph.Edges import Edges
@@ -144,7 +143,6 @@ def to_pydot(G, labels, dpi=200):
 # COMMAND ----------
 
 # Utility methods related to setting up models for double machine learning (DML).
-
 
 # ignoring deprication warnings
 from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
@@ -399,7 +397,7 @@ def plot_policy(df, treatment):
         y=df["PC Count"],
         hue=treatment,
         hue_order=all_treatments,
-        cmap="Dark2",
+        palette="Dark2",
         s=40,
     )
     plt.legend(title="Investment Policy")
@@ -413,22 +411,105 @@ def plot_policy(df, treatment):
 
 # COMMAND ----------
 
-# Common configuration settings and data loading across all notebooks.
+def generate_data():
+    np.random.seed(1)
+    n = 10000
 
+    global_flag = np.random.binomial(1, 0.2, n)
+    major_flag = np.random.binomial(1, 0.2, n)
+    smc_flag = np.random.binomial(1, 0.5, n)
+    commercial_flag = np.random.binomial(1, 0.7, n)
+
+    size = np.random.exponential(100000, n) + np.random.uniform(5000, 15000, n)
+    it_spend = np.exp(np.log(size) - 1.4 + np.random.uniform(size=n))
+
+    pc_count = np.random.exponential(50, n) + np.random.uniform(5, 10, n)
+    employee_count = np.exp(np.log(pc_count) * 0.9 + 0.4 + np.random.uniform(size=n))
+
+    size = size.astype(int)
+    it_spend = it_spend.astype(int)
+    pc_count = pc_count.astype(int)
+    employee_count = employee_count.astype(int)
+
+    input_X = pd.DataFrame({
+        'Global Flag': global_flag,
+        'Major Flag': major_flag,
+        'SMC Flag': smc_flag,
+        'Commercial Flag': commercial_flag,
+        'IT Spend': it_spend,
+        'Employee Count': employee_count,
+        'PC Count': pc_count,
+        'Size': size
+    })
+
+    W_cols = ['Major Flag', 'SMC Flag', 'Commercial Flag', 'IT Spend', 'Employee Count', 'PC Count']
+
+    def generate_treatment(coefs, const, noise_scale):
+        noise = np.random.normal(scale=noise_scale, size=n)
+        z = input_X[W_cols] @ coefs + const + noise
+        prob = expit(z)
+        return np.random.binomial(1, prob, n)
+
+    tech_support = generate_treatment(np.array([0, 0, 0, 1e-5, 0, 0]), -0.465, 2.0)
+    discount = generate_treatment(np.array([0.2, 0, 0, 5e-6, 0, 0]), -0.27, 1.5)
+    t3 = generate_treatment(np.array([0.5, 0.1, -0.2, 0, 0.005, -0.005]), -0.12, 1.0)
+
+    z_m = tech_support * 2 - 1 + np.random.normal(size=n)
+    m = np.random.binomial(1, expit(z_m), n)
+
+    X_cols = ['Global Flag', 'Size']
+    te_tech_support = input_X[X_cols] @ np.array([500, 0.02]) + 5000
+    te_discount = input_X[X_cols] @ np.array([-1000, 0.05]) + 0
+    te_t3 = input_X[X_cols] @ np.array([0, 0]) + 0
+
+    y_te = te_tech_support * tech_support + te_discount * discount + te_t3 * t3
+
+    g_coefs = np.array([2000, 0, 5000, 0.25, 0.0001, 0.0001])
+    g_const = 5000
+    g_y = input_X[W_cols] @ g_coefs + g_const
+
+    y_noise = np.random.normal(scale=1000, size=n)
+    mediator_effect = 2000 * m
+
+    y = y_te + g_y + y_noise + mediator_effect
+
+    z_c = 0.03 * y + 1000 * t3 - 1400
+    c = np.random.binomial(1, expit(z_c), n)
+
+    input_df = pd.concat([
+        input_X,
+        pd.DataFrame({
+            'Tech Support': tech_support,
+            'Discount': discount,
+            'New Engagement Strategy': t3,
+            'New Product Adoption': m,
+            'Planning Summit': c,
+            'Revenue': y.round(2),
+            'Direct Treatment Effect: Tech Support': te_tech_support,
+            'Total Treatment Effect: Tech Support': np.round(te_tech_support + (expit(1) - expit(-1)) * 2000, 2),
+            'Direct Treatment Effect: Discount': te_discount,
+            'Total Treatment Effect: Discount': te_discount,
+            'Direct Treatment Effect: New Engagement Strategy': te_t3,
+            'Total Treatment Effect: New Engagement Strategy': te_t3,
+        })
+    ], axis=1)
+
+    return input_df
+
+# COMMAND ----------
+
+# Common configuration settings and data loading across all notebooks.
 
 # For running from a job, the experiment needs to be created in a workspace object.
 username = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
 experiment_name = "/Users/{}/incentive-effects-estimation".format(username)
 mlflow.set_experiment(experiment_name)
 
-
-# Load the data file from a parquet file as a pandas dataframe for use throughout.
+# Generate a synthetic dataset for use throughout.
 # Since it's relatively small and for pedagogical purposes, we don't create a Delta
 # table as you'd want to in practice.
-ground_truth_path = "s3://db-gtm-industry-solutions/data/rcg/causal_incentive/ground_truth.parquet"
-ground_truth_df = spark.read.parquet(ground_truth_path).toPandas()
+ground_truth_df = generate_data()
 input_df = ground_truth_df.iloc[:, 0:14]
-
 
 # Some additional metadata we can use as needed to work with the input dataframe.
 treatment_cols = ["Tech Support", "Discount", "New Engagement Strategy"]

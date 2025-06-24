@@ -69,9 +69,7 @@ Feature Name | Type | Details
 This data has been simulated and the incentives influence "ground truth" is therefore known
 
 
-
-
-##Steps
+## Steps
 The following steps are executed in order to develop a Personalized Incentive Recommender:
 
 
