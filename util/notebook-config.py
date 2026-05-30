@@ -22,19 +22,22 @@ mlflow.set_registry_uri("databricks-uc")
 
 # COMMAND ----------
 
-# Create catalog if it doesn't exist
-catalog = "causal_solacc"
-create_catalog_query = f"CREATE CATALOG IF NOT EXISTS {catalog}"
-use_catalog_query = f"USE CATALOG {catalog}"
-
-# Create database with the user's name if it doesn't exist
+# Create catalog and schema for model registration
 email = spark.sql('select current_user() as user').collect()[0]['user']
 db = email.split('@')[0].replace('.', '_')
-create_db_query = f"CREATE SCHEMA IF NOT EXISTS {catalog}.{db}"
 
-_ = spark.sql(create_catalog_query)
-_ = spark.sql(use_catalog_query)
-_ = spark.sql(create_db_query)
+# Try to create and use the preferred catalog; otherwise use the workspace default
+catalog = "causal_solacc"
+try:
+    _ = spark.sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
+    _ = spark.sql(f"USE CATALOG {catalog}")
+except Exception as e:
+    print(f"Warning: Could not create/use catalog '{catalog}': {e}")
+    # Use the workspace's current default catalog (already active, no USE CATALOG needed)
+    catalog = spark.sql("SELECT current_catalog()").collect()[0][0]
+    print(f"Using current default catalog: {catalog}")
+
+_ = spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{db}")
 
 # COMMAND ----------
 
@@ -191,22 +194,17 @@ def setup_treatment_and_out_models():
 # Utility methods and classes for MLflow experiment tracking and model registration.
 
 
-from pip._vendor import pkg_resources
+from importlib.metadata import version as _get_version
 from mlflow.models.signature import ModelSignature
 from mlflow.types import DataType, Schema, TensorSpec, ColSpec
 
 
 def get_version(package):
     """Retrive the version of the specified package for MLflow metadata logging."""
-    package = package.lower()
-    return next(
-        (
-            p.version
-            for p in pkg_resources.working_set
-            if p.project_name.lower() == package
-        ),
-        "No match",
-    )
+    try:
+        return _get_version(package)
+    except Exception:
+        return "No match"
 
 
 class ModelWrapper(mlflow.pyfunc.PythonModel):
