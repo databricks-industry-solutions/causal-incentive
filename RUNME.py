@@ -51,22 +51,17 @@ job_json = {
                 "libraries": [
                   {
                       "pypi": {
-                          "package": "networkx==2.8.8" 
+                          "package": "causal-learn==0.1.4.7"
                       }
                   },
                   {
                       "pypi": {
-                          "package": "causal-learn==0.1.3" 
+                          "package": "dowhy==0.14"
                       }
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.10" 
-                      }
-                  },
-                  {
-                      "pypi": {
-                          "package": "econml==0.14.0" 
+                          "package": "econml==0.16.0"
                       }
                   }
               ]
@@ -85,22 +80,17 @@ job_json = {
                 "libraries": [
                   {
                       "pypi": {
-                          "package": "networkx==2.8.8" 
+                          "package": "causal-learn==0.1.4.7"
                       }
                   },
                   {
                       "pypi": {
-                          "package": "causal-learn==0.1.3" 
+                          "package": "dowhy==0.14"
                       }
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.10" 
-                      }
-                  },
-                  {
-                      "pypi": {
-                          "package": "econml==0.14.0" 
+                          "package": "econml==0.16.0"
                       }
                   }
               ]
@@ -119,22 +109,17 @@ job_json = {
                 "libraries": [
                   {
                       "pypi": {
-                          "package": "networkx==2.8.8" 
+                          "package": "causal-learn==0.1.4.7"
                       }
                   },
                   {
                       "pypi": {
-                          "package": "causal-learn==0.1.3" 
+                          "package": "dowhy==0.14"
                       }
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.10" 
-                      }
-                  },
-                  {
-                      "pypi": {
-                          "package": "econml==0.14.0" 
+                          "package": "econml==0.16.0"
                       }
                   }
               ]
@@ -153,22 +138,17 @@ job_json = {
                 "libraries": [
                   {
                       "pypi": {
-                          "package": "networkx==2.8.8" 
+                          "package": "causal-learn==0.1.4.7"
                       }
                   },
                   {
                       "pypi": {
-                          "package": "causal-learn==0.1.3" 
+                          "package": "dowhy==0.14"
                       }
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.10" 
-                      }
-                  },
-                  {
-                      "pypi": {
-                          "package": "econml==0.14.0" 
+                          "package": "econml==0.16.0"
                       }
                   }
               ]
@@ -187,22 +167,17 @@ job_json = {
                 "libraries": [
                   {
                       "pypi": {
-                          "package": "networkx==2.8.8" 
+                          "package": "causal-learn==0.1.4.7"
                       }
                   },
                   {
                       "pypi": {
-                          "package": "causal-learn==0.1.3" 
+                          "package": "dowhy==0.14"
                       }
                   },
                   {
                       "pypi": {
-                          "package": "dowhy==0.10" 
-                      }
-                  },
-                  {
-                      "pypi": {
-                          "package": "econml==0.14.0" 
+                          "package": "econml==0.16.0"
                       }
                   }
               ]
@@ -212,7 +187,7 @@ job_json = {
             {
                 "job_cluster_key": "causal_cluster",
                 "new_cluster": {
-                    "spark_version": "14.3.x-cpu-ml-scala2.12",
+                    "spark_version": "16.4.x-cpu-ml-scala2.12",
                     "num_workers": 0,
                     "spark_conf": {
                         "spark.master": "local[*, 4]",
