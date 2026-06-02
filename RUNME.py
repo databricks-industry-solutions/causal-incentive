@@ -187,7 +187,7 @@ job_json = {
             {
                 "job_cluster_key": "causal_cluster",
                 "new_cluster": {
-                    "spark_version": "16.4.x-cpu-ml-scala2.12",
+                    "spark_version": "17.3.x-cpu-ml-scala2.13",
                     "num_workers": 0,
                     "spark_conf": {
                         "spark.master": "local[*, 4]",
